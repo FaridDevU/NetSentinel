@@ -50,4 +50,29 @@ public class ScanJobUpdater {
             scanJobRepository.save(job);
         });
     }
+
+    @Transactional
+    public boolean cancelScan(UUID scanJobId) {
+        return scanJobRepository.findById(scanJobId).map(job -> {
+            if (job.getStatus() == ScanStatus.PENDING || job.getStatus() == ScanStatus.RUNNING) {
+                job.setStatus(ScanStatus.CANCELLED);
+                job.setCompletedAt(Instant.now());
+                scanJobRepository.save(job);
+                return true;
+            }
+            return false;
+        }).orElse(false);
+    }
+
+    @Transactional
+    public void deleteScan(UUID scanJobId) {
+        scanJobRepository.deleteById(scanJobId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isCancelled(UUID scanJobId) {
+        return scanJobRepository.findById(scanJobId)
+                .map(job -> job.getStatus() == ScanStatus.CANCELLED)
+                .orElse(true);
+    }
 }

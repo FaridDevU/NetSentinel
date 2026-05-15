@@ -6,6 +6,7 @@ import com.netsentinel.entity.ScanJob;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,7 +19,6 @@ public class NmapParserService {
     private static final Pattern OS_PATTERN = Pattern.compile("OS details: ([^\n]+)");
     private static final Pattern PORT_LINE_PATTERN = Pattern.compile("(\\d+)/(tcp|udp)\\s+(\\w+)\\s+(.*)");
     private static final Pattern MAC_PATTERN = Pattern.compile("MAC Address: ([0-9A-Fa-f:]+) \\(([^)]+)\\)");
-    private static final Pattern VERSION_PATTERN = Pattern.compile("^([^\\d]+?)\\s+(\\d+\\.\\d+[.\\d]*)");
 
     public List<NetworkHost> parse(String rawOutput, ScanJob scanJob) {
         if (rawOutput == null || rawOutput.isBlank()) {
@@ -29,8 +29,7 @@ public class NmapParserService {
         String[] blocks = HOST_BLOCK_SPLITTER.split(rawOutput);
 
         for (int i = 1; i < blocks.length; i++) {
-            String block = blocks[i];
-            NetworkHost host = parseHostBlock(block, scanJob);
+            NetworkHost host = parseHostBlock(blocks[i], scanJob);
             if (host != null) {
                 hosts.add(host);
             }
@@ -69,9 +68,7 @@ public class NmapParserService {
             host.setVendor(macMatcher.group(2));
         }
 
-        List<NetworkPort> ports = parsePorts(block, host);
-        host.setPorts(ports);
-
+        host.setPorts(parsePorts(block, host));
         return host;
     }
 
@@ -85,21 +82,35 @@ public class NmapParserService {
             port.setPortNumber(Integer.parseInt(portMatcher.group(1)));
             port.setProtocol(portMatcher.group(2));
             port.setState(portMatcher.group(3));
-
-            String serviceInfo = portMatcher.group(4).trim();
-            if (!serviceInfo.isBlank()) {
-                Matcher versionMatcher = VERSION_PATTERN.matcher(serviceInfo);
-                if (versionMatcher.find()) {
-                    port.setService(versionMatcher.group(1).trim());
-                    port.setVersion(versionMatcher.group(2).trim());
-                } else {
-                    port.setService(serviceInfo);
-                }
-            }
-
+            parseServiceVersion(port, portMatcher.group(4).trim());
             ports.add(port);
         }
 
         return ports;
+    }
+
+    private void parseServiceVersion(NetworkPort port, String serviceInfo) {
+        if (serviceInfo == null || serviceInfo.isBlank()) {
+            return;
+        }
+
+        String[] parts = serviceInfo.split("\\s+");
+        int versionIdx = -1;
+
+        for (int i = 0; i < parts.length; i++) {
+            if (!parts[i].isEmpty() && Character.isDigit(parts[i].charAt(0))) {
+                versionIdx = i;
+                break;
+            }
+        }
+
+        if (versionIdx < 0) {
+            port.setService(serviceInfo.trim());
+        } else {
+            port.setVersion(parts[versionIdx]);
+            if (versionIdx > 0) {
+                port.setService(String.join(" ", Arrays.copyOfRange(parts, 0, versionIdx)).trim());
+            }
+        }
     }
 }
