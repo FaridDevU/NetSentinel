@@ -1,0 +1,41 @@
+# Node / Electron
+node_modules/
+dist/
+dist-electron/
+release/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular
+frontend/.angular/
+frontend/dist/
+
+# Java / Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/*.jar
+!backend/.mvn/wrapper/maven-wrapper.properties
+*.class
+*.log
+
+# Rust
+sandbox/target/
+Cargo.lock
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
