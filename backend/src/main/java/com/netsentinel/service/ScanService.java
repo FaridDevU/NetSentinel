@@ -28,15 +28,18 @@ public class ScanService {
     private final SandboxService sandboxService;
     private final NmapParserService nmapParserService;
     private final NvdService nvdService;
+    private final ScanJobUpdater scanJobUpdater;
 
     public ScanService(ScanJobRepository scanJobRepository,
                        SandboxService sandboxService,
                        NmapParserService nmapParserService,
-                       NvdService nvdService) {
+                       NvdService nvdService,
+                       ScanJobUpdater scanJobUpdater) {
         this.scanJobRepository = scanJobRepository;
         this.sandboxService = sandboxService;
         this.nmapParserService = nmapParserService;
         this.nvdService = nvdService;
+        this.scanJobUpdater = scanJobUpdater;
     }
 
     @Transactional
@@ -46,27 +49,18 @@ public class ScanService {
     }
 
     @Async("scanExecutor")
-    @Transactional
     public void executeScan(UUID scanJobId) {
-        ScanJob job = scanJobRepository.findById(scanJobId)
-                .orElseThrow(() -> new IllegalArgumentException("ScanJob not found: " + scanJobId));
+        ScanJob job = scanJobUpdater.markRunning(scanJobId);
 
         log.info("Starting scan {} for target {}", scanJobId, job.getTarget());
-        job.setStatus(ScanStatus.RUNNING);
-        scanJobRepository.save(job);
 
         SandboxService.SandboxResult result = sandboxService.runNmap(job.getTarget(), job.getParameters());
 
         if (!result.success()) {
-            job.setStatus(ScanStatus.FAILED);
-            job.setErrorMessage(result.error());
-            job.setCompletedAt(Instant.now());
-            scanJobRepository.save(job);
+            scanJobUpdater.markFailed(scanJobId, result.error());
             log.error("Scan {} failed: {}", scanJobId, result.error());
             return;
         }
-
-        job.setRawOutput(result.output());
 
         List<NetworkHost> hosts = nmapParserService.parse(result.output(), job);
 
@@ -79,14 +73,11 @@ public class ScanService {
             }
         }
 
-        job.setHosts(hosts);
-        job.setStatus(ScanStatus.COMPLETED);
-        job.setCompletedAt(Instant.now());
-        scanJobRepository.save(job);
-
+        scanJobUpdater.saveResults(scanJobId, result.output(), hosts);
         log.info("Scan {} completed. Found {} hosts.", scanJobId, hosts.size());
     }
 
+    @Transactional(readOnly = true)
     public Optional<ScanStatusResponse> getStatus(UUID id) {
         return scanJobRepository.findById(id).map(job -> new ScanStatusResponse(
                 job.getId(),
@@ -98,10 +89,12 @@ public class ScanService {
         ));
     }
 
+    @Transactional(readOnly = true)
     public Optional<ScanResultsResponse> getResults(UUID id) {
         return scanJobRepository.findById(id).map(this::toResultsResponse);
     }
 
+    @Transactional(readOnly = true)
     public List<ScanStatusResponse> getHistory() {
         return scanJobRepository.findAllByOrderByStartedAtDesc().stream()
                 .map(job -> new ScanStatusResponse(

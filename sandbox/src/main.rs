@@ -30,7 +30,7 @@ async fn main() {
         .route("/health", get(health_handler))
         .route("/execute", post(execute_handler));
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("0.0.0.0:{}", port);
     info!("NetSentinel Sandbox starting on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr)
