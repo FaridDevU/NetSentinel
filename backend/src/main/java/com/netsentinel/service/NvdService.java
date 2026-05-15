@@ -18,12 +18,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class NvdService {
 
     private static final Logger log = LoggerFactory.getLogger(NvdService.class);
     private static final int MAX_RESULTS = 20;
+    private static final long REQUEST_INTERVAL_MS = 650;
 
     @Value("${nvd.api.base-url}")
     private String baseUrl;
@@ -37,12 +39,58 @@ public class NvdService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    private final ConcurrentHashMap<String, List<CveCacheData>> cache = new ConcurrentHashMap<>();
+    private final Object rateLimitLock = new Object();
+    private long lastRequestTime = 0;
+
+    private record CveCacheData(
+            String cveId,
+            String description,
+            Double cvssScore,
+            String cvssVector,
+            String publishedDate,
+            String nvdUrl
+    ) {}
+
     public List<CveEntry> lookupCves(String service, String version, NetworkPort port) {
-        if (service == null || service.isBlank() || version == null || version.isBlank()) {
+        if (service == null || service.isBlank()) {
             return List.of();
         }
 
-        String query = service.trim() + " " + version.trim();
+        String query = version != null && !version.isBlank()
+                ? service.trim() + " " + version.trim()
+                : service.trim();
+
+        String cacheKey = query.toLowerCase();
+        List<CveCacheData> cached = cache.get(cacheKey);
+        if (cached != null) {
+            log.debug("NVD cache hit for: {}", cacheKey);
+            return cached.stream().map(d -> toCveEntry(d, port)).toList();
+        }
+
+        applyRateLimit();
+
+        List<CveCacheData> result = fetchFromNvd(query);
+        cache.put(cacheKey, result);
+        return result.stream().map(d -> toCveEntry(d, port)).toList();
+    }
+
+    private void applyRateLimit() {
+        synchronized (rateLimitLock) {
+            long now = System.currentTimeMillis();
+            long waitMs = REQUEST_INTERVAL_MS - (now - lastRequestTime);
+            if (waitMs > 0) {
+                try {
+                    Thread.sleep(waitMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            lastRequestTime = System.currentTimeMillis();
+        }
+    }
+
+    private List<CveCacheData> fetchFromNvd(String query) {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String url = baseUrl + "?keywordSearch=" + encodedQuery + "&resultsPerPage=" + MAX_RESULTS;
 
@@ -61,22 +109,29 @@ public class NvdService {
                     HttpResponse.BodyHandlers.ofString()
             );
 
+            if (response.statusCode() == 429) {
+                log.warn("NVD API rate limit hit (429). Consider setting nvd.api.key in config.");
+                return List.of();
+            }
+
             if (response.statusCode() != 200) {
                 log.warn("NVD API returned status {} for query: {}", response.statusCode(), query);
                 return List.of();
             }
 
-            return parseCveResponse(response.body(), port);
+            return parseCveResponse(response.body());
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return List.of();
         } catch (Exception e) {
-            log.warn("Failed to query NVD for {} {}: {}", service, version, e.getMessage());
+            log.warn("Failed to query NVD for '{}': {}", query, e.getMessage());
             return List.of();
         }
     }
 
-    private List<CveEntry> parseCveResponse(String body, NetworkPort port) {
-        List<CveEntry> entries = new ArrayList<>();
-
+    private List<CveCacheData> parseCveResponse(String body) {
+        List<CveCacheData> entries = new ArrayList<>();
         try {
             JsonNode root = mapper.readTree(body);
             JsonNode vulnerabilities = root.path("vulnerabilities");
@@ -87,37 +142,47 @@ public class NvdService {
 
             for (JsonNode vuln : vulnerabilities) {
                 JsonNode cve = vuln.path("cve");
-                CveEntry entry = new CveEntry();
-                entry.setPort(port);
-                entry.setCveId(cve.path("id").asText());
+                String cveId = cve.path("id").asText(null);
+                if (cveId == null || cveId.isBlank()) continue;
 
+                String description = null;
                 JsonNode descriptions = cve.path("descriptions");
-                if (descriptions.isArray() && descriptions.size() > 0) {
-                    entry.setDescription(descriptions.get(0).path("value").asText());
+                if (descriptions.isArray() && !descriptions.isEmpty()) {
+                    description = descriptions.get(0).path("value").asText(null);
                 }
 
                 JsonNode metrics = cve.path("metrics");
-                Double score = extractCvssScore(metrics);
-                String vector = extractCvssVector(metrics);
-                entry.setCvssScore(score);
-                entry.setCvssVector(vector);
-                entry.setPublishedDate(cve.path("published").asText(null));
-                entry.setNvdUrl("https://nvd.nist.gov/vuln/detail/" + entry.getCveId());
-
-                entries.add(entry);
+                entries.add(new CveCacheData(
+                        cveId,
+                        description,
+                        extractCvssScore(metrics),
+                        extractCvssVector(metrics),
+                        cve.path("published").asText(null),
+                        "https://nvd.nist.gov/vuln/detail/" + cveId
+                ));
             }
-
         } catch (Exception e) {
             log.error("Failed to parse NVD response", e);
         }
-
         return entries;
+    }
+
+    private CveEntry toCveEntry(CveCacheData data, NetworkPort port) {
+        CveEntry entry = new CveEntry();
+        entry.setPort(port);
+        entry.setCveId(data.cveId());
+        entry.setDescription(data.description());
+        entry.setCvssScore(data.cvssScore());
+        entry.setCvssVector(data.cvssVector());
+        entry.setPublishedDate(data.publishedDate());
+        entry.setNvdUrl(data.nvdUrl());
+        return entry;
     }
 
     private Double extractCvssScore(JsonNode metrics) {
         for (String key : new String[]{"cvssMetricV31", "cvssMetricV30", "cvssMetricV2"}) {
             JsonNode metric = metrics.path(key);
-            if (metric.isArray() && metric.size() > 0) {
+            if (metric.isArray() && !metric.isEmpty()) {
                 double score = metric.get(0).path("cvssData").path("baseScore").asDouble(-1);
                 if (score >= 0) return score;
             }
@@ -128,7 +193,7 @@ public class NvdService {
     private String extractCvssVector(JsonNode metrics) {
         for (String key : new String[]{"cvssMetricV31", "cvssMetricV30", "cvssMetricV2"}) {
             JsonNode metric = metrics.path(key);
-            if (metric.isArray() && metric.size() > 0) {
+            if (metric.isArray() && !metric.isEmpty()) {
                 String vector = metric.get(0).path("cvssData").path("vectorString").asText(null);
                 if (vector != null && !vector.isBlank()) return vector;
             }

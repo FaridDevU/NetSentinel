@@ -1,5 +1,6 @@
 package com.netsentinel.service;
 
+import com.netsentinel.dto.PagedResponse;
 import com.netsentinel.dto.ScanResultsResponse;
 import com.netsentinel.dto.ScanStatusResponse;
 import com.netsentinel.entity.CveEntry;
@@ -10,6 +11,7 @@ import com.netsentinel.enums.ScanStatus;
 import com.netsentinel.repository.ScanJobRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,10 +53,14 @@ public class ScanService {
     @Async("scanExecutor")
     public void executeScan(UUID scanJobId) {
         ScanJob job = scanJobUpdater.markRunning(scanJobId);
-
         log.info("Starting scan {} for target {}", scanJobId, job.getTarget());
 
         SandboxService.SandboxResult result = sandboxService.runNmap(job.getTarget(), job.getParameters());
+
+        if (scanJobUpdater.isCancelled(scanJobId)) {
+            log.info("Scan {} cancelled during sandbox execution, discarding results", scanJobId);
+            return;
+        }
 
         if (!result.success()) {
             scanJobUpdater.markFailed(scanJobId, result.error());
@@ -66,27 +72,33 @@ public class ScanService {
 
         for (NetworkHost host : hosts) {
             for (NetworkPort port : host.getPorts()) {
-                if ("open".equals(port.getState()) && port.getService() != null && port.getVersion() != null) {
+                if ("open".equals(port.getState()) && port.getService() != null) {
                     List<CveEntry> cves = nvdService.lookupCves(port.getService(), port.getVersion(), port);
                     port.setCves(cves);
                 }
             }
         }
 
+        if (scanJobUpdater.isCancelled(scanJobId)) {
+            log.info("Scan {} cancelled before save, discarding results", scanJobId);
+            return;
+        }
+
         scanJobUpdater.saveResults(scanJobId, result.output(), hosts);
-        log.info("Scan {} completed. Found {} hosts.", scanJobId, hosts.size());
+        log.info("Scan {} completed with {} hosts", scanJobId, hosts.size());
+    }
+
+    public boolean cancelScan(UUID id) {
+        return scanJobUpdater.cancelScan(id);
+    }
+
+    public void deleteScan(UUID id) {
+        scanJobUpdater.deleteScan(id);
     }
 
     @Transactional(readOnly = true)
     public Optional<ScanStatusResponse> getStatus(UUID id) {
-        return scanJobRepository.findById(id).map(job -> new ScanStatusResponse(
-                job.getId(),
-                job.getTarget(),
-                job.getStatus(),
-                job.getStartedAt(),
-                job.getCompletedAt(),
-                job.getErrorMessage()
-        ));
+        return scanJobRepository.findById(id).map(this::toStatusResponse);
     }
 
     @Transactional(readOnly = true)
@@ -95,17 +107,22 @@ public class ScanService {
     }
 
     @Transactional(readOnly = true)
-    public List<ScanStatusResponse> getHistory() {
-        return scanJobRepository.findAllByOrderByStartedAtDesc().stream()
-                .map(job -> new ScanStatusResponse(
-                        job.getId(),
-                        job.getTarget(),
-                        job.getStatus(),
-                        job.getStartedAt(),
-                        job.getCompletedAt(),
-                        job.getErrorMessage()
-                ))
-                .toList();
+    public PagedResponse<ScanStatusResponse> getHistory(int page, int size) {
+        return PagedResponse.from(
+                scanJobRepository.findAllByOrderByStartedAtDesc(PageRequest.of(page, size))
+                        .map(this::toStatusResponse)
+        );
+    }
+
+    private ScanStatusResponse toStatusResponse(ScanJob job) {
+        return new ScanStatusResponse(
+                job.getId(),
+                job.getTarget(),
+                job.getStatus(),
+                job.getStartedAt(),
+                job.getCompletedAt(),
+                job.getErrorMessage()
+        );
     }
 
     private ScanResultsResponse toResultsResponse(ScanJob job) {
