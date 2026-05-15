@@ -9,7 +9,6 @@ use uuid::Uuid;
 use crate::models::{ExecuteRequest, ExecuteResponse};
 
 const DEFAULT_TIMEOUT_SECS: u64 = 600;
-const DEFAULT_WSL_DISTRO: &str = "kali-linux";
 
 pub async fn execute(req: ExecuteRequest) -> ExecuteResponse {
     let exec_id = Uuid::new_v4();
@@ -117,23 +116,12 @@ where
 }
 
 fn build_command(tool: &str, args: &[String], target: &str) -> Command {
-    let mut cmd;
-
-    if cfg!(target_os = "windows") {
-        let distro = std::env::var("WSL_DISTRO")
-            .unwrap_or_else(|_| DEFAULT_WSL_DISTRO.to_string());
-
-        cmd = Command::new("wsl.exe");
-        cmd.arg("-d").arg(distro).arg("--").arg(tool);
-    } else {
-        cmd = Command::new(tool);
-    }
-
+    // El sandbox corre dentro de Kali WSL2 — invoca las herramientas directamente
+    let mut cmd = Command::new(tool);
     for arg in args {
         cmd.arg(arg);
     }
     cmd.arg(target);
-
     cmd
 }
 
