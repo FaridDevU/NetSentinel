@@ -4,7 +4,7 @@ Analizador de seguridad de red automatico para usuarios no tecnicos. Escanea tu 
 
 ## Stack
 
-- **Frontend**: Angular 17 + Electron
+- **Frontend**: Angular 21 + Electron
 - **Backend**: Spring Boot + Java 21
 - **Sandbox**: Rust + WSL2 + Kali Linux
 - **Bases de datos**: PostgreSQL + Neo4j + Redis
