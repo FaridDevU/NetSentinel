@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage } from 'electron';
+import { app, BrowserWindow, nativeImage, Menu } from 'electron';
 import { join } from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
@@ -70,12 +70,15 @@ function resolveIcon(): Electron.NativeImage {
 async function createWindow(): Promise<void> {
   const icon = resolveIcon();
 
+  Menu.setApplicationMenu(null);
+
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    width: 960,
+    height: 540,
+    minWidth: 760,
+    minHeight: 460,
     backgroundColor: '#1e1e1e',
+    autoHideMenuBar: true,
     icon,
     show: false,
     webPreferences: {
@@ -88,13 +91,15 @@ async function createWindow(): Promise<void> {
   });
 
   mainWindow.once('ready-to-show', () => {
+    mainWindow?.setMenuBarVisibility(false);
     mainWindow?.show();
   });
 
-  if (process.env['NODE_ENV'] === 'development') {
-    mainWindow.loadURL('http://localhost:4200');
+  const distIndex = join(__dirname, '../dist/frontend/browser/index.html');
+  if (existsSync(distIndex)) {
+    mainWindow.loadFile(distIndex);
   } else {
-    mainWindow.loadFile(join(__dirname, '../dist/frontend/browser/index.html'));
+    mainWindow.loadURL('http://localhost:4200');
   }
 
   mainWindow.on('closed', () => {
