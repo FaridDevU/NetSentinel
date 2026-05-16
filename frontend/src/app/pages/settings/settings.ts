@@ -1,15 +1,18 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LangService } from '../../services/lang.service';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 
 @Component({
   selector: 'app-settings',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })
 export class SettingsPage implements OnInit {
   private static readonly STORAGE_KEY = 'ns_claude_key';
 
+  readonly lang = inject(LangService);
   apiKey = '';
   saved = signal(false);
 

@@ -1,23 +1,24 @@
-import { Component, OnDestroy, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription, timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 import { LocalNetworkInterface, ScanStatus } from '../../models/scan.models';
 
 type ScanProfile = 'quick' | 'full' | 'custom';
 
 interface Profile {
   key: ScanProfile;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   flags: string[];
 }
 
 @Component({
   selector: 'app-scan',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './scan.html',
   styleUrl: './scan.scss',
 })
@@ -58,28 +59,26 @@ export class ScanPage implements OnDestroy {
   readonly profiles: Profile[] = [
     {
       key: 'quick',
-      label: 'Quick Scan',
-      description: 'Service version detection, T4 timing',
+      labelKey: 'profile.quick.label',
+      descKey: 'profile.quick.desc',
       flags: ['-sV', '-T4'],
     },
     {
       key: 'full',
-      label: 'Deep Scan',
-      description: 'OS detection, scripts, version',
+      labelKey: 'profile.deep.label',
+      descKey: 'profile.deep.desc',
       flags: ['-sV', '-T4', '-A'],
     },
     {
       key: 'custom',
-      label: 'Custom',
-      description: 'Specify nmap flags manually',
+      labelKey: 'profile.custom.label',
+      descKey: 'profile.custom.desc',
       flags: [],
     },
   ];
 
-  constructor(
-    private scanService: ScanService,
-    private router: Router
-  ) {}
+  private scanService = inject(ScanService);
+  private router = inject(Router);
 
   detectLocalNetworks(): void {
     if (this.loadingNetworks()) return;

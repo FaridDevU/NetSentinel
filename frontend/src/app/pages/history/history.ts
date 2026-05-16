@@ -3,11 +3,12 @@ import { Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Subscription, timer } from 'rxjs';
 import { ScanService } from '../../services/scan.service';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 import { PagedResponse, ScanStatusResponse } from '../../models/scan.models';
 
 @Component({
   selector: 'app-history',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, TranslatePipe],
   templateUrl: './history.html',
   styleUrl: './history.scss',
 })

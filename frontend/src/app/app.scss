@@ -111,6 +111,23 @@
   svg { flex-shrink: 0; }
 }
 
+.lang-toggle {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+
+  &:hover { color: var(--text-primary); border-color: rgba(84, 84, 88, 0.8); }
+}
+
 .offline-dot {
   width: 6px;
   height: 6px;

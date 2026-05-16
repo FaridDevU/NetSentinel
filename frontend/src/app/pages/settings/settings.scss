@@ -152,6 +152,32 @@
   }
 }
 
+.lang-selector {
+  display: flex;
+  gap: 6px;
+}
+
+.lang-btn {
+  padding: 5px 16px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+
+  &:hover { background: var(--elevated); color: var(--text-primary); }
+
+  &.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(49, 126, 246, 0.3);
+    cursor: default;
+  }
+}
+
 .divider {
   height: 1px;
   background: var(--border);

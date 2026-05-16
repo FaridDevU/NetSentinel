@@ -1,20 +1,20 @@
 <div class="page">
   <div class="page-header">
-    <h1 class="page-title">New Scan</h1>
-    <p class="page-subtitle">Run an nmap scan against a target host or network range</p>
+    <h1 class="page-title">{{ 'scan.title' | t }}</h1>
+    <p class="page-subtitle">{{ 'scan.subtitle' | t }}</p>
   </div>
 
   @if (!scanning()) {
     <div class="form-card">
       <div class="form-group">
-        <label class="form-label" for="target">Target</label>
+        <label class="form-label" for="target">{{ 'scan.target.label' | t }}</label>
         <input
           id="target"
           [class]="'form-input' + (targetError ? ' input-error' : (targetTouched && targetValid ? ' input-ok' : ''))"
           type="text"
           [(ngModel)]="target"
           (blur)="targetTouched = true"
-          placeholder="192.168.1.1  or  10.0.0.0/24  or  hostname"
+          [placeholder]="'scan.target.placeholder' | t"
           (keyup.enter)="startScan()"
           autocomplete="off"
           spellcheck="false"
@@ -23,12 +23,12 @@
           <span class="form-error">{{ targetError }}</span>
         } @else {
           <div class="target-hint-row">
-            <span class="form-hint">IP address, CIDR range, or hostname</span>
+            <span class="form-hint">{{ 'scan.target.hint' | t }}</span>
             <button class="detect-btn" type="button" (click)="detectLocalNetworks()" [disabled]="loadingNetworks()">
               @if (loadingNetworks()) {
                 <span class="detect-spinner"></span>
               }
-              Detect LAN
+              {{ 'scan.detect' | t }}
             </button>
           </div>
         }
@@ -45,7 +45,7 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Scan Profile</label>
+        <label class="form-label">{{ 'scan.profile.label' | t }}</label>
         <div class="profiles">
           @for (profile of profiles; track profile.key) {
             <button
@@ -53,8 +53,8 @@
               (click)="selectProfile(profile.key)"
               type="button"
             >
-              <span class="profile-label">{{ profile.label }}</span>
-              <span class="profile-desc">{{ profile.description }}</span>
+              <span class="profile-label">{{ profile.labelKey | t }}</span>
+              <span class="profile-desc">{{ profile.descKey | t }}</span>
               @if (profile.flags.length > 0) {
                 <code class="profile-flags">{{ profile.flags.join(' ') }}</code>
               }
@@ -65,7 +65,7 @@
 
       @if (selectedProfile === 'custom') {
         <div class="form-group">
-          <label class="form-label" for="flags">nmap flags</label>
+          <label class="form-label" for="flags">{{ 'scan.flags.label' | t }}</label>
           <input
             id="flags"
             class="form-input mono"
@@ -84,7 +84,7 @@
           (click)="startScan()"
           [disabled]="!targetValid"
         >
-          Start Scan
+          {{ 'scan.start' | t }}
         </button>
       </div>
     </div>
@@ -117,10 +117,10 @@
 
       <div class="status-actions">
         @if (currentStatus() === 'PENDING' || currentStatus() === 'RUNNING') {
-          <button class="btn btn-danger" (click)="cancelScan()">Cancel</button>
+          <button class="btn btn-danger" (click)="cancelScan()">{{ 'scan.cancel' | t }}</button>
         }
         @if (currentStatus() === 'FAILED' || currentStatus() === 'CANCELLED') {
-          <button class="btn btn-secondary" (click)="resetForm()">New Scan</button>
+          <button class="btn btn-secondary" (click)="resetForm()">{{ 'scan.newScan' | t }}</button>
         }
       </div>
     </div>
