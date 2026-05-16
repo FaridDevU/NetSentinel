@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -18,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class NvdService {
@@ -39,7 +42,10 @@ public class NvdService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private final ConcurrentHashMap<String, List<CveCacheData>> cache = new ConcurrentHashMap<>();
+    private final Cache<String, List<CveCacheData>> cache = Caffeine.newBuilder()
+            .maximumSize(500)
+            .expireAfterWrite(6, TimeUnit.HOURS)
+            .build();
     private final Object rateLimitLock = new Object();
     private long lastRequestTime = 0;
 
@@ -62,7 +68,7 @@ public class NvdService {
                 : service.trim();
 
         String cacheKey = query.toLowerCase();
-        List<CveCacheData> cached = cache.get(cacheKey);
+        List<CveCacheData> cached = cache.getIfPresent(cacheKey);
         if (cached != null) {
             log.debug("NVD cache hit for: {}", cacheKey);
             return cached.stream().map(d -> toCveEntry(d, port)).toList();
