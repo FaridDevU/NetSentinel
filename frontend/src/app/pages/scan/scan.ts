@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subscription, timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
-import { ScanStatus } from '../../models/scan.models';
+import { LocalNetworkInterface, ScanStatus } from '../../models/scan.models';
 
 type ScanProfile = 'quick' | 'full' | 'custom';
 
@@ -26,6 +26,10 @@ export class ScanPage implements OnDestroy {
   selectedProfile: ScanProfile = 'quick';
   customFlags = '';
   targetTouched = false;
+
+  localNetworks = signal<LocalNetworkInterface[]>([]);
+  loadingNetworks = signal(false);
+  showNetworkPicker = signal(false);
 
   private static readonly TARGET_REGEX = /^[a-zA-Z0-9.\-:/\[\]]{1,100}$/;
 
@@ -76,6 +80,28 @@ export class ScanPage implements OnDestroy {
     private scanService: ScanService,
     private router: Router
   ) {}
+
+  detectLocalNetworks(): void {
+    if (this.loadingNetworks()) return;
+    this.loadingNetworks.set(true);
+    this.showNetworkPicker.set(false);
+    this.scanService.getLocalNetworks().subscribe({
+      next: (nets) => {
+        this.localNetworks.set(nets);
+        this.loadingNetworks.set(false);
+        this.showNetworkPicker.set(nets.length > 0);
+      },
+      error: () => {
+        this.loadingNetworks.set(false);
+      },
+    });
+  }
+
+  selectNetwork(net: LocalNetworkInterface): void {
+    this.target = net.subnet;
+    this.targetTouched = true;
+    this.showNetworkPicker.set(false);
+  }
 
   selectProfile(key: ScanProfile): void {
     this.selectedProfile = key;

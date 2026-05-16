@@ -113,6 +113,49 @@
       </div>
     }
 
+    <div class="ai-report-section">
+      @if (!aiReport() && !generatingAi()) {
+        <div class="ai-report-prompt">
+          @if (hasApiKey) {
+            <div class="ai-prompt-content">
+              <div class="ai-prompt-label">AI Deep Analysis</div>
+              <p class="ai-prompt-desc">
+                Claude will analyze attack paths, chained vulnerabilities, and produce a contextual remediation roadmap.
+              </p>
+              <button class="btn-ai" (click)="generateAiReport()">Generate AI Report</button>
+            </div>
+          } @else {
+            <div class="ai-prompt-content ai-prompt-no-key">
+              <div class="ai-prompt-label">AI Deep Analysis</div>
+              <p class="ai-prompt-desc">
+                Configure your Anthropic API key in
+                <a routerLink="/settings" class="settings-link">Settings</a>
+                to enable AI-powered cross-host analysis.
+              </p>
+            </div>
+          }
+        </div>
+      }
+      @if (generatingAi()) {
+        <div class="ai-generating">
+          <div class="spinner-sm"></div>
+          <span>Claude is analyzing your scan data...</span>
+        </div>
+      }
+      @if (aiError()) {
+        <div class="ai-error">{{ aiError() }}</div>
+      }
+      @if (aiReport()) {
+        <div class="ai-report-card">
+          <div class="ai-report-header">
+            <span class="ai-report-title">AI Deep Analysis</span>
+            <span class="ai-model-badge">claude-opus-4-7</span>
+          </div>
+          <pre class="ai-report-body">{{ aiReport() }}</pre>
+        </div>
+      }
+    </div>
+
     @if (results()!.hosts.length === 0) {
       <div class="empty-state">No hosts discovered in this scan.</div>
     }

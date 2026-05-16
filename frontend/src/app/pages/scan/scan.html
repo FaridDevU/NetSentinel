@@ -22,7 +22,25 @@
         @if (targetError) {
           <span class="form-error">{{ targetError }}</span>
         } @else {
-          <span class="form-hint">IP address, CIDR range, or hostname</span>
+          <div class="target-hint-row">
+            <span class="form-hint">IP address, CIDR range, or hostname</span>
+            <button class="detect-btn" type="button" (click)="detectLocalNetworks()" [disabled]="loadingNetworks()">
+              @if (loadingNetworks()) {
+                <span class="detect-spinner"></span>
+              }
+              Detect LAN
+            </button>
+          </div>
+        }
+        @if (showNetworkPicker() && localNetworks().length > 0) {
+          <div class="network-picker">
+            @for (net of localNetworks(); track net.subnet) {
+              <button class="network-chip" type="button" (click)="selectNetwork(net)">
+                <span class="chip-subnet">{{ net.subnet }}</span>
+                <span class="chip-name">{{ net.name }}</span>
+              </button>
+            }
+          </div>
         }
       </div>
 

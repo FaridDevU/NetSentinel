@@ -1,0 +1,89 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">Configure optional integrations</p>
+  </div>
+
+  <div class="settings-card">
+    <div class="setting-section">
+      <div class="section-header">
+        <h2 class="section-title">Claude AI Integration</h2>
+        <div class="section-status">
+          @if (hasKey) {
+            <span class="status-pill active">Configured</span>
+          } @else {
+            <span class="status-pill inactive">Not configured</span>
+          }
+        </div>
+      </div>
+      <p class="section-desc">
+        When configured, a "Generate AI Report" button appears in scan results.
+        Claude performs deep cross-host analysis, attack path reasoning, and context-aware
+        remediation — going beyond the automatic deterministic engine.
+        Your API key is stored locally and never sent to any server except the Anthropic API.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="apiKey">Anthropic API Key</label>
+        <input
+          id="apiKey"
+          class="form-input mono"
+          type="password"
+          [(ngModel)]="apiKey"
+          placeholder="sk-ant-..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        @if (hasKey) {
+          <span class="form-hint">{{ maskedKey }}</span>
+        } @else {
+          <span class="form-hint">Get your key at console.anthropic.com</span>
+        }
+      </div>
+
+      <div class="form-actions">
+        @if (saved()) {
+          <span class="saved-msg">Saved</span>
+        }
+        @if (hasKey) {
+          <button class="btn btn-ghost" (click)="clear()">Clear key</button>
+        }
+        <button
+          class="btn btn-primary"
+          (click)="save()"
+          [disabled]="!hasKey"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="setting-section">
+      <div class="section-header">
+        <h2 class="section-title">How AI Analysis Works</h2>
+      </div>
+      <div class="how-it-works">
+        <div class="step">
+          <span class="step-num">1</span>
+          <div class="step-body">
+            <strong>Run a scan</strong> — NetSentinel collects hosts, ports, versions, and CVEs automatically
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <div class="step-body">
+            <strong>Deterministic analysis</strong> — the built-in engine scores risk, identifies dangerous services, and generates findings with zero AI cost
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <div class="step-body">
+            <strong>AI deep analysis (optional)</strong> — Claude receives all scan data and produces cross-host attack paths, chained vulnerability scenarios, and a prioritized remediation roadmap
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
