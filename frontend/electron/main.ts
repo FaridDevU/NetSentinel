@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, nativeImage } from 'electron';
 import { join } from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
@@ -53,13 +53,30 @@ function waitForBackend(retries: number): Promise<void> {
   });
 }
 
+function resolveIcon(): Electron.NativeImage {
+  const icoPath =
+    process.env['NODE_ENV'] === 'development'
+      ? join(__dirname, '../public/icon.ico')
+      : join(process.resourcesPath, 'icon.ico');
+  if (existsSync(icoPath)) return nativeImage.createFromPath(icoPath);
+
+  const pngPath =
+    process.env['NODE_ENV'] === 'development'
+      ? join(__dirname, '../public/icon.png')
+      : join(process.resourcesPath, 'icon.png');
+  return nativeImage.createFromPath(pngPath);
+}
+
 async function createWindow(): Promise<void> {
+  const icon = resolveIcon();
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    backgroundColor: '#0d1117',
+    backgroundColor: '#1e1e1e',
+    icon,
     show: false,
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
@@ -86,6 +103,7 @@ async function createWindow(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  app.setAppUserModelId('com.netsentinel.app');
   await startBackend();
   await createWindow();
 
