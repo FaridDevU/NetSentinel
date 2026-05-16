@@ -93,4 +93,36 @@
   flex: 1;
   overflow-y: auto;
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(210, 153, 34, 0.1);
+  border-bottom: 1px solid rgba(210, 153, 34, 0.3);
+  color: var(--warning);
+  font-size: 12.5px;
+  padding: 8px 20px;
+  flex-shrink: 0;
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.offline-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warning);
+  margin-right: 4px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }

@@ -4,9 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+
+import java.time.Duration;
 
 import java.util.List;
 import java.util.Map;
@@ -19,8 +22,12 @@ public class SandboxService {
     private final RestClient restClient;
 
     public SandboxService(@Value("${sandbox.url:http://127.0.0.1:7878}") String sandboxUrl) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofMinutes(11));
         this.restClient = RestClient.builder()
                 .baseUrl(sandboxUrl)
+                .requestFactory(factory)
                 .build();
     }
 

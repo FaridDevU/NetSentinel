@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
+import { Subscription, timer } from 'rxjs';
 import { ScanService } from '../../services/scan.service';
 import { PagedResponse, ScanStatusResponse } from '../../models/scan.models';
 
@@ -10,12 +11,14 @@ import { PagedResponse, ScanStatusResponse } from '../../models/scan.models';
   templateUrl: './history.html',
   styleUrl: './history.scss',
 })
-export class HistoryPage implements OnInit {
+export class HistoryPage implements OnInit, OnDestroy {
   data = signal<PagedResponse<ScanStatusResponse> | null>(null);
   loading = signal(true);
   error = signal<string | null>(null);
   currentPage = signal(0);
   deletingId = signal<string | null>(null);
+
+  private refreshSub?: Subscription;
 
   constructor(
     private scanService: ScanService,
@@ -26,6 +29,10 @@ export class HistoryPage implements OnInit {
     this.load(0);
   }
 
+  ngOnDestroy(): void {
+    this.refreshSub?.unsubscribe();
+  }
+
   load(page: number): void {
     this.loading.set(true);
     this.error.set(null);
@@ -34,6 +41,7 @@ export class HistoryPage implements OnInit {
         this.data.set(res);
         this.currentPage.set(page);
         this.loading.set(false);
+        this.scheduleRefreshIfNeeded();
       },
       error: () => {
         this.error.set('Failed to load history. Is the backend running?');
@@ -42,12 +50,26 @@ export class HistoryPage implements OnInit {
     });
   }
 
+  private scheduleRefreshIfNeeded(): void {
+    this.refreshSub?.unsubscribe();
+    const d = this.data();
+    if (!d) return;
+    const hasActive = d.content.some(
+      (s) => s.status === 'PENDING' || s.status === 'RUNNING'
+    );
+    if (hasActive) {
+      this.refreshSub = timer(4000).subscribe(() => {
+        this.load(this.currentPage());
+      });
+    }
+  }
+
   goToPage(page: number): void {
     this.load(page);
   }
 
   openResults(id: string): void {
-    this.router.navigate(['/results', id]);
+    void this.router.navigate(['/results', id]);
   }
 
   deleteScan(event: Event, id: string): void {
@@ -71,6 +93,10 @@ export class HistoryPage implements OnInit {
 
   statusClass(status: string): string {
     return status.toLowerCase();
+  }
+
+  isActive(status: string): boolean {
+    return status === 'PENDING' || status === 'RUNNING';
   }
 
   durationSeconds(scan: ScanStatusResponse): string {

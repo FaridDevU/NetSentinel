@@ -10,7 +10,18 @@
     <div class="error-block">{{ error() }}</div>
   }
 
-  @if (!loading() && results()) {
+  @if (!loading() && results() && (results()!.status === 'PENDING' || results()!.status === 'RUNNING')) {
+    <div class="scan-running-state">
+      <div class="spinner"></div>
+      <div class="running-info">
+        <span class="running-title">Scan in progress</span>
+        <code class="running-target">{{ results()!.target }}</code>
+      </div>
+      <a routerLink="/scan" class="btn-go-live">Monitor live progress</a>
+    </div>
+  }
+
+  @if (!loading() && results() && results()!.status !== 'PENDING' && results()!.status !== 'RUNNING') {
     <div class="page-header">
       <button class="back-btn" (click)="goBack()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

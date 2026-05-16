@@ -70,6 +70,19 @@
   color: var(--text-muted);
 }
 
+.form-error {
+  font-size: 11.5px;
+  color: var(--danger);
+}
+
+.input-error {
+  border-color: var(--danger) !important;
+}
+
+.input-ok {
+  border-color: var(--success) !important;
+}
+
 .profiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
