@@ -1,0 +1,173 @@
+<div class="page">
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Loading results...</span>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-block">{{ error() }}</div>
+  }
+
+  @if (!loading() && results()) {
+    <div class="page-header">
+      <button class="back-btn" (click)="goBack()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        History
+      </button>
+
+      <div class="header-meta">
+        <h1 class="page-title">
+          <code>{{ results()!.target }}</code>
+        </h1>
+        <div class="header-details">
+          <span [class]="'badge ' + statusClass(results()!.status)">
+            {{ results()!.status }}
+          </span>
+          <span class="meta-item">{{ results()!.startedAt | date:'MMM d, yyyy HH:mm' }}</span>
+          <span class="meta-sep">·</span>
+          <span class="meta-item">{{ durationSeconds() }}</span>
+          <span class="meta-sep">·</span>
+          <span class="meta-item">{{ results()!.hosts.length }} host(s)</span>
+        </div>
+      </div>
+    </div>
+
+    @if (results()!.hosts.length === 0) {
+      <div class="empty-state">No hosts discovered in this scan.</div>
+    }
+
+    <div class="hosts">
+      @for (host of results()!.hosts; track host.id) {
+        <div class="host-card">
+          <button class="host-header" (click)="toggleHost(host.id)">
+            <div [class]="'host-chevron' + (isHostExpanded(host.id) ? ' expanded' : '')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+
+            <div class="host-info">
+              <span class="host-ip">{{ host.ip }}</span>
+              @if (host.hostname) {
+                <span class="host-hostname">{{ host.hostname }}</span>
+              }
+              @if (host.os) {
+                <span class="host-os">{{ host.os }}</span>
+              }
+            </div>
+
+            <div class="host-stats">
+              <span class="stat">{{ openPorts(host) }} open port(s)</span>
+              @if (totalCves(host) > 0) {
+                <span class="stat cve-count">{{ totalCves(host) }} CVE(s)</span>
+              }
+            </div>
+          </button>
+
+          @if (isHostExpanded(host.id)) {
+            <div class="host-body">
+              @if (host.macAddress || host.vendor) {
+                <div class="host-meta-row">
+                  @if (host.macAddress) {
+                    <span class="meta-pair">
+                      <span class="meta-key">MAC</span>
+                      <code>{{ host.macAddress }}</code>
+                    </span>
+                  }
+                  @if (host.vendor) {
+                    <span class="meta-pair">
+                      <span class="meta-key">Vendor</span>
+                      <span>{{ host.vendor }}</span>
+                    </span>
+                  }
+                </div>
+              }
+
+              @if (host.ports.length === 0) {
+                <div class="no-ports">No ports reported for this host.</div>
+              } @else {
+                <table class="ports-table">
+                  <thead>
+                    <tr>
+                      <th>Port</th>
+                      <th>State</th>
+                      <th>Service</th>
+                      <th>Version</th>
+                      <th>CVEs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (port of host.ports; track port.id) {
+                      <tr
+                        [class]="'port-row' + (port.cves.length > 0 ? ' has-cves' : '')"
+                        (click)="port.cves.length > 0 ? togglePort(port.id) : null"
+                      >
+                        <td class="port-number">
+                          <code>{{ port.portNumber }}/{{ port.protocol }}</code>
+                        </td>
+                        <td>
+                          <span [class]="'state-badge ' + port.state">
+                            {{ port.state }}
+                          </span>
+                        </td>
+                        <td class="service-cell">{{ port.service ?? '—' }}</td>
+                        <td class="version-cell">
+                          @if (port.version) {
+                            <code class="version-code">{{ port.version }}</code>
+                          } @else {
+                            <span class="na">—</span>
+                          }
+                        </td>
+                        <td class="cve-cell">
+                          @if (port.cves.length > 0) {
+                            <span class="cve-count-badge">{{ port.cves.length }}</span>
+                          } @else {
+                            <span class="na">—</span>
+                          }
+                        </td>
+                      </tr>
+
+                      @if (isPortExpanded(port.id) && port.cves.length > 0) {
+                        <tr class="cve-detail-row">
+                          <td colspan="5">
+                            <div class="cve-list">
+                              @for (cve of port.cves; track cve.cveId) {
+                                <div class="cve-entry">
+                                  <div class="cve-header">
+                                    <a
+                                      [href]="cve.nvdUrl"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      class="cve-id"
+                                      (click)="$event.stopPropagation()"
+                                    >
+                                      {{ cve.cveId }}
+                                    </a>
+                                    @if (cve.cvssScore !== null) {
+                                      <span [class]="'cvss-badge ' + cvssClass(cve.cvssScore)">
+                                        CVSS {{ cve.cvssScore.toFixed(1) }}
+                                      </span>
+                                    }
+                                  </div>
+                                  <p class="cve-desc">{{ cve.description }}</p>
+                                </div>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

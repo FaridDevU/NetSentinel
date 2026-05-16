@@ -1,0 +1,185 @@
+import { Component, OnDestroy, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Subscription, timer } from 'rxjs';
+import { switchMap, takeWhile } from 'rxjs/operators';
+import { ScanService } from '../../services/scan.service';
+import { ScanStatus } from '../../models/scan.models';
+
+type ScanProfile = 'quick' | 'full' | 'custom';
+
+interface Profile {
+  key: ScanProfile;
+  label: string;
+  description: string;
+  flags: string[];
+}
+
+@Component({
+  selector: 'app-scan',
+  imports: [FormsModule],
+  templateUrl: './scan.html',
+  styleUrl: './scan.scss',
+})
+export class ScanPage implements OnDestroy {
+  target = '';
+  selectedProfile: ScanProfile = 'quick';
+  customFlags = '';
+
+  scanning = signal(false);
+  currentScanId = signal<string | null>(null);
+  currentStatus = signal<ScanStatus | null>(null);
+  elapsedSeconds = signal(0);
+  errorMessage = signal<string | null>(null);
+
+  private pollSub?: Subscription;
+  private timerSub?: Subscription;
+
+  readonly profiles: Profile[] = [
+    {
+      key: 'quick',
+      label: 'Quick Scan',
+      description: 'Service version detection, T4 timing',
+      flags: ['-sV', '-T4'],
+    },
+    {
+      key: 'full',
+      label: 'Deep Scan',
+      description: 'OS detection, scripts, version',
+      flags: ['-sV', '-T4', '-A'],
+    },
+    {
+      key: 'custom',
+      label: 'Custom',
+      description: 'Specify nmap flags manually',
+      flags: [],
+    },
+  ];
+
+  constructor(
+    private scanService: ScanService,
+    private router: Router
+  ) {}
+
+  selectProfile(key: ScanProfile): void {
+    this.selectedProfile = key;
+  }
+
+  private getParameters(): string[] {
+    if (this.selectedProfile === 'custom') {
+      return this.customFlags
+        .trim()
+        .split(/\s+/)
+        .filter((f) => f.length > 0);
+    }
+    return this.profiles.find((p) => p.key === this.selectedProfile)!.flags;
+  }
+
+  startScan(): void {
+    const target = this.target.trim();
+    if (!target) return;
+
+    this.errorMessage.set(null);
+    this.scanning.set(true);
+    this.elapsedSeconds.set(0);
+    this.currentStatus.set('PENDING');
+
+    this.timerSub = timer(1000, 1000).subscribe(() => {
+      this.elapsedSeconds.update((s) => s + 1);
+    });
+
+    this.scanService.startScan(target, this.getParameters()).subscribe({
+      next: (res) => {
+        this.currentScanId.set(res.id);
+        this.currentStatus.set(res.status);
+        this.startPolling(res.id);
+      },
+      error: (err) => {
+        this.stopTimers();
+        this.scanning.set(false);
+        this.currentStatus.set('FAILED');
+        const msg = err?.error?.error ?? 'Failed to start scan';
+        this.errorMessage.set(msg);
+      },
+    });
+  }
+
+  private startPolling(id: string): void {
+    this.pollSub = timer(0, 2000)
+      .pipe(
+        switchMap(() => this.scanService.getStatus(id)),
+        takeWhile(
+          (s) => s.status === 'PENDING' || s.status === 'RUNNING',
+          true
+        )
+      )
+      .subscribe({
+        next: (status) => {
+          this.currentStatus.set(status.status);
+          if (status.status === 'COMPLETED') {
+            this.stopTimers();
+            this.router.navigate(['/results', id]);
+          } else if (
+            status.status === 'FAILED' ||
+            status.status === 'CANCELLED'
+          ) {
+            this.stopTimers();
+            this.scanning.set(false);
+            this.errorMessage.set(
+              status.errorMessage ?? 'Scan did not complete successfully'
+            );
+          }
+        },
+        error: () => {
+          this.stopTimers();
+          this.scanning.set(false);
+          this.errorMessage.set('Lost connection to backend');
+        },
+      });
+  }
+
+  cancelScan(): void {
+    const id = this.currentScanId();
+    if (!id) return;
+    this.scanService.cancelScan(id).subscribe({
+      next: () => {
+        this.stopTimers();
+        this.scanning.set(false);
+        this.currentStatus.set('CANCELLED');
+      },
+      error: () => {
+        this.stopTimers();
+        this.scanning.set(false);
+      },
+    });
+  }
+
+  resetForm(): void {
+    this.scanning.set(false);
+    this.currentScanId.set(null);
+    this.currentStatus.set(null);
+    this.elapsedSeconds.set(0);
+    this.errorMessage.set(null);
+    this.stopTimers();
+  }
+
+  private stopTimers(): void {
+    this.pollSub?.unsubscribe();
+    this.timerSub?.unsubscribe();
+  }
+
+  ngOnDestroy(): void {
+    this.stopTimers();
+  }
+
+  indicatorClass(): string {
+    return this.currentStatus()?.toLowerCase() ?? '';
+  }
+
+  formatElapsed(seconds: number): string {
+    if (seconds < 60) return `${seconds}s`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}m ${s}s`;
+  }
+}
