@@ -10,12 +10,13 @@
     <div class="error-block">{{ error() }}</div>
   }
 
+  <!-- Scan en progreso: vista en vivo -->
   @if (!loading() && results() && (results()!.status === 'PENDING' || results()!.status === 'RUNNING')) {
     <div class="live-view">
       <div class="live-header">
         <div class="spinner-sm"></div>
         <div class="live-info">
-          <span class="live-status">{{ results()!.status }}</span>
+          <span class="live-status">Analizando tu red...</span>
           <code class="live-target">{{ results()!.target }}</code>
         </div>
       </div>
@@ -26,60 +27,130 @@
           }
         </div>
       } @else {
-        <div class="live-waiting">
-          <span>Waiting for nmap to start...</span>
-        </div>
+        <div class="live-waiting">Iniciando analisis...</div>
       }
     </div>
   }
 
+  <!-- Resultados completos -->
   @if (!loading() && results() && results()!.status !== 'PENDING' && results()!.status !== 'RUNNING') {
-    <div class="page-header">
+
+    <div class="results-header">
       <button class="back-btn" (click)="goBack()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
         {{ 'results.back' | t }}
       </button>
-
-      <div class="header-meta">
-        <h1 class="page-title">
-          <code>{{ results()!.target }}</code>
-        </h1>
-        <div class="header-details">
-          <span [class]="'badge ' + statusClass(results()!.status)">
-            {{ results()!.status }}
-          </span>
-          <span class="meta-item">{{ results()!.startedAt | date:'MMM d, yyyy HH:mm' }}</span>
-          <span class="meta-sep">·</span>
-          <span class="meta-item">{{ durationSeconds() }}</span>
-          <span class="meta-sep">·</span>
-          <span class="meta-item">{{ results()!.hosts.length }} {{ 'results.hosts' | t }}</span>
-        </div>
-      </div>
+      <span class="results-date">{{ 'results.scanDate' | t }} {{ results()!.startedAt | date:'d MMM yyyy, HH:mm' }} · {{ durationSeconds() }}</span>
     </div>
 
-    <!-- AI Report Section -->
-    <div class="ai-report-section">
-      @if (!aiReport() && !generatingAi()) {
-        <div class="ai-report-prompt">
-          @if (hasApiKey) {
-            <div class="ai-prompt-content">
-              <div class="ai-prompt-label">{{ 'results.ai.title' | t }}</div>
-              <p class="ai-prompt-desc">{{ 'results.ai.desc' | t }}</p>
-              <button class="btn-ai" (click)="generateAiReport()">{{ 'results.ai.generate' | t }}</button>
-            </div>
-          } @else {
-            <div class="ai-prompt-content ai-prompt-no-key">
-              <div class="ai-prompt-label">{{ 'results.ai.title' | t }}</div>
-              <p class="ai-prompt-desc">
-                {{ 'results.ai.noKeyText' | t }}
-                <a routerLink="/settings" class="settings-link">{{ 'results.ai.noKeyLink' | t }}</a>
-                {{ 'results.ai.noKeyEnd' | t }}
-              </p>
-            </div>
+    <!-- HERO: semaforo de riesgo -->
+    @if (results()!.analysis) {
+      <div [class]="'risk-hero ' + riskBannerClass()">
+        <div class="risk-hero-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="risk-hero-body">
+          <div class="risk-hero-title">{{ riskTitleKey() | t }}</div>
+          <div class="risk-hero-sub">{{ riskSubKey() | t }}</div>
+          <div class="risk-hero-meta">
+            <span>{{ devicesCount() }} {{ 'results.hero.devices' | t }}</span>
+            @if (problemsCount() > 0) {
+              <span class="hero-sep">·</span>
+              <span>{{ problemsCount() }} {{ 'results.hero.issues' | t }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Que debes hacer (Recomendaciones) -->
+    @if (results()!.analysis && results()!.analysis!.recommendations.length > 0) {
+      <div class="section-card">
+        <div class="section-label">{{ 'results.whattodo' | t }}</div>
+        <ul class="action-list">
+          @for (rec of results()!.analysis!.recommendations; track $index) {
+            <li class="action-item">
+              <span class="action-bullet">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+              <span>{{ rec }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <!-- Problemas encontrados (Findings) -->
+    @if (results()!.analysis) {
+      <div class="section-card">
+        <div class="section-label">{{ 'results.problems' | t }}
+          @if (problemsCount() > 0) {
+            <span class="count-badge">{{ problemsCount() }}</span>
           }
         </div>
+
+        @if (problemsCount() === 0) {
+          <p class="no-problems">{{ 'results.noproblems' | t }}</p>
+        } @else {
+          <div class="findings-list">
+            @for (finding of results()!.analysis!.findings; track $index) {
+              <div class="finding-card">
+                <button class="finding-header" (click)="toggleFinding($index)">
+                  <span [class]="'sev-dot ' + findingClass(finding.severity)"></span>
+                  <span class="finding-title">{{ finding.title }}</span>
+                  <div [class]="'finding-chevron' + (isFindingExpanded($index) ? ' expanded' : '')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </div>
+                </button>
+                @if (isFindingExpanded($index)) {
+                  <div class="finding-detail">
+                    <p class="finding-text">{{ finding.detail }}</p>
+                    <div class="finding-device">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                      </svg>
+                      <code>{{ finding.host }}</code>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Informe IA -->
+    <div class="section-card ai-section">
+      @if (!aiReport() && !generatingAi()) {
+        @if (hasApiKey) {
+          <div class="ai-prompt-row">
+            <div class="ai-prompt-text">
+              <div class="section-label">{{ 'results.ai.title' | t }}</div>
+              <p class="ai-desc">{{ 'results.ai.desc' | t }}</p>
+            </div>
+            <button class="btn-ai" (click)="generateAiReport()">{{ 'results.ai.generate' | t }}</button>
+          </div>
+        } @else {
+          <div class="ai-nokey">
+            <div class="section-label">{{ 'results.ai.title' | t }}</div>
+            <p class="ai-desc">
+              {{ 'results.ai.noKeyText' | t }}
+              <a routerLink="/settings" class="settings-link">{{ 'results.ai.noKeyLink' | t }}</a>
+              {{ 'results.ai.noKeyEnd' | t }}
+            </p>
+          </div>
+        }
       }
       @if (generatingAi()) {
         <div class="ai-generating">
@@ -91,237 +162,167 @@
         <div class="ai-error">{{ aiError() }}</div>
       }
       @if (aiReport() && parsedReport().length > 0) {
-        <div class="ai-report-card">
-          <div class="ai-report-header">
-            <span class="ai-report-title">{{ 'results.ai.title' | t }}</span>
-            <span class="ai-model-badge">claude-opus-4-7</span>
-            <button class="btn-ai-sm" (click)="generateAiReport()">{{ 'results.ai.regenerate' | t }}</button>
-          </div>
-          <div class="ai-report-body">
-            @for (section of parsedReport(); track $index) {
-              <div class="report-section">
-                @if (section.title) {
-                  <h3 class="report-section-title">{{ section.title }}</h3>
-                }
-                <div class="report-section-body">
-                  @for (item of section.items; track $index) {
-                    @if (item.type === 'h4') {
-                      <h4 class="report-subsection-title">{{ item.text }}</h4>
-                    }
-                    @if (item.type === 'li') {
-                      <div class="report-bullet">{{ item.text }}</div>
-                    }
-                    @if (item.type === 'p') {
-                      <p class="report-para">{{ item.text }}</p>
-                    }
-                  }
-                </div>
-              </div>
-            }
-          </div>
+        <div class="ai-report-header">
+          <span class="section-label">{{ 'results.ai.title' | t }}</span>
+          <span class="ai-model-badge">claude-opus-4-7</span>
+          <button class="btn-ai-sm" (click)="generateAiReport()">{{ 'results.ai.regenerate' | t }}</button>
         </div>
-      }
-    </div>
-
-    <!-- Deterministic Analysis -->
-    @if (results()!.analysis) {
-      <div class="analysis-section">
-        <div class="analysis-header">
-          <div class="analysis-title-row">
-            <h2 class="analysis-title">{{ 'results.analysis.title' | t }}</h2>
-            <span [class]="'risk-badge ' + riskLevelClass(results()!.analysis!.riskLevel)">
-              {{ results()!.analysis!.riskLevel }}
-            </span>
-            <span class="risk-score">{{ results()!.analysis!.riskScore.toFixed(1) }} / 10</span>
-          </div>
-          <p class="analysis-summary">{{ results()!.analysis!.summary }}</p>
-        </div>
-
-        @if (results()!.analysis!.findings.length > 0) {
-          <div class="findings-list">
-            <h3 class="subsection-title">
-              {{ 'results.findings' | t }}
-              <span class="findings-count">{{ results()!.analysis!.findings.length }}</span>
-            </h3>
-            @for (finding of results()!.analysis!.findings; track $index) {
-              <div class="finding-card">
-                <button class="finding-header" (click)="toggleFinding($index)">
-                  <span [class]="'finding-severity ' + findingClass(finding.severity)">
-                    {{ finding.severity }}
-                  </span>
-                  <span class="finding-title">{{ finding.title }}</span>
-                  <div class="finding-meta">
-                    <code class="finding-host">{{ finding.host }}:{{ finding.port }}</code>
-                    <div [class]="'finding-chevron' + (isFindingExpanded($index) ? ' expanded' : '')">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"/>
-                      </svg>
-                    </div>
-                  </div>
-                </button>
-                @if (isFindingExpanded($index)) {
-                  <div class="finding-detail">
-                    <p class="finding-text">{{ finding.detail }}</p>
-                    @if (hasCves(finding)) {
-                      <div class="finding-cves">
-                        <span class="cves-label">{{ 'results.ai.relatedCves' | t }}</span>
-                        @for (cve of finding.relatedCves; track cve) {
-                          <span class="cve-chip">{{ cve }}</span>
-                        }
-                      </div>
-                    }
-                  </div>
+        <div class="ai-report-body">
+          @for (section of parsedReport(); track $index) {
+            <div class="report-section">
+              @if (section.title) {
+                <h3 class="report-section-title">{{ section.title }}</h3>
+              }
+              <div class="report-section-body">
+                @for (item of section.items; track $index) {
+                  @if (item.type === 'h4') { <h4 class="report-subsection-title">{{ item.text }}</h4> }
+                  @if (item.type === 'li') { <div class="report-bullet">{{ item.text }}</div> }
+                  @if (item.type === 'p')  { <p class="report-para">{{ item.text }}</p> }
                 }
               </div>
-            }
-          </div>
-        }
-
-        @if (results()!.analysis!.recommendations.length > 0) {
-          <div class="recommendations">
-            <h3 class="subsection-title">{{ 'results.recommendations' | t }}</h3>
-            <ul class="rec-list">
-              @for (rec of results()!.analysis!.recommendations; track $index) {
-                <li class="rec-item">{{ rec }}</li>
-              }
-            </ul>
-          </div>
-        }
-      </div>
-    }
-
-    @if (results()!.hosts.length === 0) {
-      <div class="empty-state">{{ 'results.noHosts' | t }}</div>
-    }
-
-    <div class="hosts">
-      @for (host of results()!.hosts; track host.id) {
-        <div class="host-card">
-          <button class="host-header" (click)="toggleHost(host.id)">
-            <div [class]="'host-chevron' + (isHostExpanded(host.id) ? ' expanded' : '')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </div>
-
-            <div class="host-info">
-              <span class="host-ip">{{ host.ip }}</span>
-              @if (host.hostname) {
-                <span class="host-hostname">{{ host.hostname }}</span>
-              }
-              @if (host.os) {
-                <span class="host-os">{{ host.os }}</span>
-              }
-            </div>
-
-            <div class="host-stats">
-              <span class="stat">{{ openPorts(host) }} {{ 'results.openPorts' | t }}</span>
-              @if (totalCves(host) > 0) {
-                <span class="stat cve-count">{{ totalCves(host) }} {{ 'results.cves' | t }}</span>
-              }
-            </div>
-          </button>
-
-          @if (isHostExpanded(host.id)) {
-            <div class="host-body">
-              @if (host.macAddress || host.vendor) {
-                <div class="host-meta-row">
-                  @if (host.macAddress) {
-                    <span class="meta-pair">
-                      <span class="meta-key">{{ 'results.mac' | t }}</span>
-                      <code>{{ host.macAddress }}</code>
-                    </span>
-                  }
-                  @if (host.vendor) {
-                    <span class="meta-pair">
-                      <span class="meta-key">{{ 'results.vendor' | t }}</span>
-                      <span>{{ host.vendor }}</span>
-                    </span>
-                  }
-                </div>
-              }
-
-              @if (host.ports.length === 0) {
-                <div class="no-ports">{{ 'results.noPorts' | t }}</div>
-              } @else {
-                <table class="ports-table">
-                  <thead>
-                    <tr>
-                      <th>{{ 'results.col.port' | t }}</th>
-                      <th>{{ 'results.col.state' | t }}</th>
-                      <th>{{ 'results.col.service' | t }}</th>
-                      <th>{{ 'results.col.version' | t }}</th>
-                      <th>{{ 'results.col.cves' | t }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (port of host.ports; track port.id) {
-                      <tr
-                        [class]="'port-row' + (port.cves.length > 0 ? ' has-cves' : '')"
-                        (click)="port.cves.length > 0 ? togglePort(port.id) : null"
-                      >
-                        <td class="port-number">
-                          <code>{{ port.portNumber }}/{{ port.protocol }}</code>
-                        </td>
-                        <td>
-                          <span [class]="'state-badge ' + port.state">
-                            {{ port.state }}
-                          </span>
-                        </td>
-                        <td class="service-cell">{{ port.service ?? '—' }}</td>
-                        <td class="version-cell">
-                          @if (port.version) {
-                            <code class="version-code">{{ port.version }}</code>
-                          } @else {
-                            <span class="na">—</span>
-                          }
-                        </td>
-                        <td class="cve-cell">
-                          @if (port.cves.length > 0) {
-                            <span class="cve-count-badge">{{ port.cves.length }}</span>
-                          } @else {
-                            <span class="na">—</span>
-                          }
-                        </td>
-                      </tr>
-
-                      @if (isPortExpanded(port.id) && port.cves.length > 0) {
-                        <tr class="cve-detail-row">
-                          <td colspan="5">
-                            <div class="cve-list">
-                              @for (cve of port.cves; track cve.cveId) {
-                                <div class="cve-entry">
-                                  <div class="cve-header">
-                                    <a
-                                      [href]="cve.nvdUrl"
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      class="cve-id"
-                                      (click)="$event.stopPropagation()"
-                                    >
-                                      {{ cve.cveId }}
-                                    </a>
-                                    @if (cve.cvssScore !== null) {
-                                      <span [class]="'cvss-badge ' + cvssClass(cve.cvssScore)">
-                                        CVSS {{ cve.cvssScore.toFixed(1) }}
-                                      </span>
-                                    }
-                                  </div>
-                                  <p class="cve-desc">{{ cve.description }}</p>
-                                </div>
-                              }
-                            </div>
-                          </td>
-                        </tr>
-                      }
-                    }
-                  </tbody>
-                </table>
-              }
             </div>
           }
         </div>
       }
     </div>
+
+    <!-- Toggle detalles tecnicos -->
+    <div class="technical-toggle-row">
+      <button class="technical-toggle" type="button" (click)="showTechnical.update(v => !v)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 4 5"/>
+          <line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+        {{ (showTechnical() ? 'results.technical.hide' : 'results.technical.toggle') | t }}
+        <svg
+          width="12" height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          [style.transform]="showTechnical() ? 'rotate(180deg)' : 'rotate(0deg)'"
+          style="transition: transform 200ms ease; display: block;"
+        >
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Detalles tecnicos: dispositivos y puertos -->
+    @if (showTechnical()) {
+      <div class="technical-section">
+        <div class="technical-title">{{ 'results.technical.title' | t }}</div>
+
+        @if (results()!.hosts.length === 0) {
+          <div class="empty-state">{{ 'results.noHosts' | t }}</div>
+        }
+
+        <div class="hosts">
+          @for (host of results()!.hosts; track host.id) {
+            <div class="host-card">
+              <button class="host-header" (click)="toggleHost(host.id)">
+                <div [class]="'host-chevron' + (isHostExpanded(host.id) ? ' expanded' : '')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </div>
+                <div class="host-info">
+                  <span class="host-ip">{{ deviceLabel(host) }}</span>
+                  @if (host.hostname && host.hostname !== deviceLabel(host)) {
+                    <span class="host-hostname">{{ host.ip }}</span>
+                  }
+                  @if (host.os) {
+                    <span class="host-os">{{ host.os }}</span>
+                  }
+                </div>
+                <div class="host-stats">
+                  <span class="stat">{{ openPorts(host) }} {{ 'results.openPorts' | t }}</span>
+                  @if (totalCves(host) > 0) {
+                    <span class="stat cve-count">{{ totalCves(host) }} {{ 'results.cves' | t }}</span>
+                  }
+                </div>
+              </button>
+
+              @if (isHostExpanded(host.id)) {
+                <div class="host-body">
+                  @if (host.macAddress || host.vendor) {
+                    <div class="host-meta-row">
+                      @if (host.macAddress) {
+                        <span class="meta-pair">
+                          <span class="meta-key">{{ 'results.mac' | t }}</span>
+                          <code>{{ host.macAddress }}</code>
+                        </span>
+                      }
+                      @if (host.vendor) {
+                        <span class="meta-pair">
+                          <span class="meta-key">{{ 'results.vendor' | t }}</span>
+                          <span>{{ host.vendor }}</span>
+                        </span>
+                      }
+                    </div>
+                  }
+                  @if (host.ports.length === 0) {
+                    <div class="no-ports">{{ 'results.noPorts' | t }}</div>
+                  } @else {
+                    <table class="ports-table">
+                      <thead>
+                        <tr>
+                          <th>{{ 'results.col.port' | t }}</th>
+                          <th>{{ 'results.col.state' | t }}</th>
+                          <th>{{ 'results.col.service' | t }}</th>
+                          <th>{{ 'results.col.version' | t }}</th>
+                          <th>{{ 'results.col.cves' | t }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (port of host.ports; track port.id) {
+                          <tr
+                            [class]="'port-row' + (port.cves.length > 0 ? ' has-cves' : '')"
+                            (click)="port.cves.length > 0 ? togglePort(port.id) : null"
+                          >
+                            <td class="port-number"><code>{{ port.portNumber }}/{{ port.protocol }}</code></td>
+                            <td><span [class]="'state-badge ' + port.state">{{ port.state }}</span></td>
+                            <td class="service-cell">{{ port.service ?? '—' }}</td>
+                            <td class="version-cell">
+                              @if (port.version) { <code class="version-code">{{ port.version }}</code> }
+                              @else { <span class="na">—</span> }
+                            </td>
+                            <td class="cve-cell">
+                              @if (port.cves.length > 0) { <span class="cve-count-badge">{{ port.cves.length }}</span> }
+                              @else { <span class="na">—</span> }
+                            </td>
+                          </tr>
+                          @if (isPortExpanded(port.id) && port.cves.length > 0) {
+                            <tr class="cve-detail-row">
+                              <td colspan="5">
+                                <div class="cve-list">
+                                  @for (cve of port.cves; track cve.cveId) {
+                                    <div class="cve-entry">
+                                      <div class="cve-header">
+                                        <a [href]="cve.nvdUrl" target="_blank" rel="noopener noreferrer" class="cve-id" (click)="$event.stopPropagation()">{{ cve.cveId }}</a>
+                                        @if (cve.cvssScore !== null) {
+                                          <span [class]="'cvss-badge ' + cvssClass(cve.cvssScore)">CVSS {{ cve.cvssScore.toFixed(1) }}</span>
+                                        }
+                                      </div>
+                                      <p class="cve-desc">{{ cve.description }}</p>
+                                    </div>
+                                  }
+                                </div>
+                              </td>
+                            </tr>
+                          }
+                        }
+                      </tbody>
+                    </table>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
   }
 </div>

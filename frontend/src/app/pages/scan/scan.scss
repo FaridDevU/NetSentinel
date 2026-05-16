@@ -260,42 +260,178 @@
   }
 }
 
-/* ---- Tips row ---- */
-.tips-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.tip-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 10px 12px;
+/* ---- Detecting row ---- */
+.detecting-row {
   display: flex;
-  gap: 9px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
 }
 
-.tip-icon {
+.detecting-text {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* ---- Detected card ---- */
+.detected-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(49, 126, 246, 0.3);
+  border-radius: 5px;
+  padding: 12px 14px;
+}
+
+.detected-icon {
   color: var(--accent);
   flex-shrink: 0;
-  margin-top: 1px;
-  opacity: 0.8;
+  display: flex;
+  align-items: center;
 }
 
-.tip-title {
+.detected-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detected-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.detected-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.detected-subnet {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.change-btn {
+  background: none;
+  border: 1px solid rgba(49, 126, 246, 0.3);
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 4px 10px;
+  white-space: nowrap;
+  transition: background 150ms ease;
+
+  &:hover { background: rgba(49, 126, 246, 0.12); }
+}
+
+/* ---- Network picker ---- */
+.picker-label {
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 3px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
 }
 
-.tip-body {
-  font-size: 11px;
+.manual-link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 150ms ease;
+
+  &:hover { color: var(--text-secondary); }
+}
+
+.no-networks-msg {
+  font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  margin: 0 0 8px;
+}
+
+.retry-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+  transition: color 150ms ease;
+
+  &:hover { color: var(--accent-hover); }
+}
+
+/* ---- Big scan button ---- */
+.form-actions-big {
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-scan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 28px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, opacity 150ms ease;
+
+  &:hover:not(:disabled) { background: var(--accent-hover); }
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
+}
+
+/* ---- Terminal toggle ---- */
+.terminal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 150ms ease;
+
+  &:hover { color: var(--text-secondary); }
+}
+
+/* ---- Status step text ---- */
+.status-step {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.status-elapsed {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.status-actions {
+  display: flex;
+  gap: 6px;
 }
 
 /* ---- Scan status card ---- */

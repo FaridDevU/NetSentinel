@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, ViewChild, effect, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription, timer } from 'rxjs';
@@ -7,32 +7,23 @@ import { ScanService } from '../../services/scan.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { LocalNetworkInterface, ScanStatus } from '../../models/scan.models';
 
-type ScanProfile = 'quick' | 'full' | 'custom';
-
-interface Profile {
-  key: ScanProfile;
-  labelKey: string;
-  descKey: string;
-  flags: string[];
-}
-
 @Component({
   selector: 'app-scan',
   imports: [FormsModule, TranslatePipe],
   templateUrl: './scan.html',
   styleUrl: './scan.scss',
 })
-export class ScanPage implements OnDestroy {
+export class ScanPage implements OnInit, OnDestroy {
   @ViewChild('terminal') terminalRef?: ElementRef<HTMLDivElement>;
 
   target = '';
-  selectedProfile: ScanProfile = 'quick';
-  customFlags = '';
   targetTouched = false;
 
   localNetworks = signal<LocalNetworkInterface[]>([]);
-  loadingNetworks = signal(false);
+  loadingNetworks = signal(true);
+  detectedNetwork = signal<LocalNetworkInterface | null>(null);
   showNetworkPicker = signal(false);
+  showManualInput = signal(false);
 
   scanning = signal(false);
   currentScanId = signal<string | null>(null);
@@ -40,13 +31,15 @@ export class ScanPage implements OnDestroy {
   elapsedSeconds = signal(0);
   errorMessage = signal<string | null>(null);
   scanLogs = signal<string[]>([]);
+  showTerminal = signal(false);
 
   private static readonly TARGET_REGEX = /^[a-zA-Z0-9.\-:/\[\]]{1,100}$/;
+  private static readonly DEFAULT_PARAMS = ['-sV', '-T4'];
 
   get targetError(): string | null {
     if (!this.targetTouched || !this.target.trim()) return null;
     if (!ScanPage.TARGET_REGEX.test(this.target.trim())) {
-      return 'Only letters, numbers, dots, hyphens, colons, slashes, and brackets allowed';
+      return 'Solo letras, numeros, puntos y guiones';
     }
     return null;
   }
@@ -56,15 +49,29 @@ export class ScanPage implements OnDestroy {
     return t.length > 0 && ScanPage.TARGET_REGEX.test(t);
   }
 
+  get canScan(): boolean {
+    return !this.loadingNetworks() && (this.detectedNetwork() !== null || this.targetValid);
+  }
+
+  progressStep = computed<string>(() => {
+    const logs = this.scanLogs();
+    if (!logs.length) return 'scan.step.searching';
+    const last = logs[logs.length - 1].toLowerCase();
+    if (last.includes('done') || last.includes('risk') || last.includes('analysis')) {
+      return 'scan.step.analyzing';
+    }
+    if (last.includes('cve') || last.includes('checking') || last.includes('consulting')) {
+      return 'scan.step.checking';
+    }
+    if (last.includes('nmap finished') || last.includes('host')) {
+      return 'scan.step.found';
+    }
+    return 'scan.step.searching';
+  });
+
   private pollSub?: Subscription;
   private timerSub?: Subscription;
   private logSub?: Subscription;
-
-  readonly profiles: Profile[] = [
-    { key: 'quick',  labelKey: 'profile.quick.label',  descKey: 'profile.quick.desc',  flags: ['-sV', '-T4'] },
-    { key: 'full',   labelKey: 'profile.deep.label',   descKey: 'profile.deep.desc',   flags: ['-sV', '-T4', '-A'] },
-    { key: 'custom', labelKey: 'profile.custom.label', descKey: 'profile.custom.desc', flags: [] },
-  ];
 
   private scanService = inject(ScanService);
   private router = inject(Router);
@@ -72,7 +79,7 @@ export class ScanPage implements OnDestroy {
   constructor() {
     effect(() => {
       const logs = this.scanLogs();
-      if (logs.length > 0) {
+      if (logs.length > 0 && this.showTerminal()) {
         setTimeout(() => {
           if (this.terminalRef?.nativeElement) {
             const el = this.terminalRef.nativeElement;
@@ -83,35 +90,60 @@ export class ScanPage implements OnDestroy {
     });
   }
 
-  detectLocalNetworks(): void {
-    if (this.loadingNetworks()) return;
+  ngOnInit(): void {
+    this.autoDetect();
+  }
+
+  private autoDetect(): void {
     this.loadingNetworks.set(true);
-    this.showNetworkPicker.set(false);
     this.scanService.getLocalNetworks().subscribe({
       next: (nets) => {
         this.localNetworks.set(nets);
         this.loadingNetworks.set(false);
-        this.showNetworkPicker.set(nets.length > 0);
+        if (nets.length === 1) {
+          this.detectedNetwork.set(nets[0]);
+          this.target = nets[0].subnet;
+        } else if (nets.length > 1) {
+          this.showNetworkPicker.set(true);
+        } else {
+          this.showManualInput.set(true);
+        }
       },
-      error: () => this.loadingNetworks.set(false),
+      error: () => {
+        this.loadingNetworks.set(false);
+        this.showManualInput.set(true);
+      },
     });
   }
 
   selectNetwork(net: LocalNetworkInterface): void {
+    this.detectedNetwork.set(net);
     this.target = net.subnet;
-    this.targetTouched = true;
+    this.showNetworkPicker.set(false);
+    this.showManualInput.set(false);
+  }
+
+  changeNetwork(): void {
+    this.detectedNetwork.set(null);
+    this.target = '';
+    if (this.localNetworks().length > 1) {
+      this.showNetworkPicker.set(true);
+    } else {
+      this.showManualInput.set(true);
+    }
+  }
+
+  showManual(): void {
+    this.showManualInput.set(true);
     this.showNetworkPicker.set(false);
   }
 
-  selectProfile(key: ScanProfile): void {
-    this.selectedProfile = key;
-  }
-
-  private getParameters(): string[] {
-    if (this.selectedProfile === 'custom') {
-      return this.customFlags.trim().split(/\s+/).filter((f) => f.length > 0);
-    }
-    return this.profiles.find((p) => p.key === this.selectedProfile)!.flags;
+  retryDetect(): void {
+    this.detectedNetwork.set(null);
+    this.showNetworkPicker.set(false);
+    this.showManualInput.set(false);
+    this.target = '';
+    this.autoDetect();
   }
 
   startScan(): void {
@@ -123,12 +155,13 @@ export class ScanPage implements OnDestroy {
     this.scanning.set(true);
     this.elapsedSeconds.set(0);
     this.currentStatus.set('PENDING');
+    this.showTerminal.set(false);
 
     this.timerSub = timer(1000, 1000).subscribe(() => {
       this.elapsedSeconds.update((s) => s + 1);
     });
 
-    this.scanService.startScan(target, this.getParameters()).subscribe({
+    this.scanService.startScan(target, ScanPage.DEFAULT_PARAMS).subscribe({
       next: (res) => {
         this.currentScanId.set(res.id);
         this.currentStatus.set(res.status);
@@ -139,7 +172,7 @@ export class ScanPage implements OnDestroy {
         this.stopTimers();
         this.scanning.set(false);
         this.currentStatus.set('FAILED');
-        this.errorMessage.set(err?.error?.error ?? 'Failed to start scan');
+        this.errorMessage.set(err?.error?.error ?? 'Error al iniciar el analisis');
       },
     });
   }
@@ -173,13 +206,13 @@ export class ScanPage implements OnDestroy {
           } else if (status.status === 'FAILED' || status.status === 'CANCELLED') {
             this.stopTimers();
             this.scanning.set(false);
-            this.errorMessage.set(status.errorMessage ?? 'Scan did not complete successfully');
+            this.errorMessage.set(status.errorMessage ?? 'El analisis no pudo completarse');
           }
         },
         error: () => {
           this.stopTimers();
           this.scanning.set(false);
-          this.errorMessage.set('Lost connection to backend');
+          this.errorMessage.set('Se perdio la conexion con el servicio');
         },
       });
   }
@@ -207,7 +240,9 @@ export class ScanPage implements OnDestroy {
     this.elapsedSeconds.set(0);
     this.errorMessage.set(null);
     this.scanLogs.set([]);
+    this.showTerminal.set(false);
     this.stopTimers();
+    this.autoDetect();
   }
 
   private stopTimers(): void {
