@@ -1,0 +1,105 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">New Scan</h1>
+    <p class="page-subtitle">Run an nmap scan against a target host or network range</p>
+  </div>
+
+  @if (!scanning()) {
+    <div class="form-card">
+      <div class="form-group">
+        <label class="form-label" for="target">Target</label>
+        <input
+          id="target"
+          class="form-input"
+          type="text"
+          [(ngModel)]="target"
+          placeholder="192.168.1.1  or  10.0.0.0/24  or  hostname"
+          (keyup.enter)="startScan()"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="form-hint">IP address, CIDR range, or hostname — no special characters</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Scan Profile</label>
+        <div class="profiles">
+          @for (profile of profiles; track profile.key) {
+            <button
+              [class]="'profile-card' + (selectedProfile === profile.key ? ' selected' : '')"
+              (click)="selectProfile(profile.key)"
+              type="button"
+            >
+              <span class="profile-label">{{ profile.label }}</span>
+              <span class="profile-desc">{{ profile.description }}</span>
+              @if (profile.flags.length > 0) {
+                <code class="profile-flags">{{ profile.flags.join(' ') }}</code>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (selectedProfile === 'custom') {
+        <div class="form-group">
+          <label class="form-label" for="flags">nmap flags</label>
+          <input
+            id="flags"
+            class="form-input mono"
+            type="text"
+            [(ngModel)]="customFlags"
+            placeholder="-sV -T4 -p 22,80,443"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      }
+
+      <div class="form-actions">
+        <button
+          class="btn btn-primary"
+          (click)="startScan()"
+          [disabled]="!target.trim()"
+        >
+          Start Scan
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (scanning()) {
+    <div class="scan-status-card">
+      <div class="status-header">
+        <div [class]="'status-indicator ' + indicatorClass()">
+          @if (currentStatus() === 'PENDING' || currentStatus() === 'RUNNING') {
+            <div class="spinner"></div>
+          }
+        </div>
+        <div class="status-info">
+          <span class="status-text">{{ currentStatus() }}</span>
+          <span class="status-target">{{ target }}</span>
+        </div>
+        <span class="elapsed">{{ formatElapsed(elapsedSeconds()) }}</span>
+      </div>
+
+      @if (currentStatus() === 'RUNNING') {
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="error-block">{{ errorMessage() }}</div>
+      }
+
+      <div class="status-actions">
+        @if (currentStatus() === 'PENDING' || currentStatus() === 'RUNNING') {
+          <button class="btn btn-danger" (click)="cancelScan()">Cancel</button>
+        }
+        @if (currentStatus() === 'FAILED' || currentStatus() === 'CANCELLED') {
+          <button class="btn btn-secondary" (click)="resetForm()">New Scan</button>
+        }
+      </div>
+    </div>
+  }
+</div>
