@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ScanService } from '../../services/scan.service';
+import { SettingsPage } from '../settings/settings';
 import { AnalysisFinding, HostDto, ScanResultsResponse } from '../../models/scan.models';
 
 @Component({
@@ -17,6 +18,12 @@ export class ResultsPage implements OnInit {
   expandedHosts = signal<Set<string>>(new Set());
   expandedPorts = signal<Set<string>>(new Set());
 
+  aiReport = signal<string | null>(null);
+  generatingAi = signal(false);
+  aiError = signal<string | null>(null);
+
+  private scanId = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -29,6 +36,7 @@ export class ResultsPage implements OnInit {
       void this.router.navigate(['/history']);
       return;
     }
+    this.scanId = id;
     this.scanService.getResults(id).subscribe({
       next: (res) => {
         this.results.set(res);
@@ -44,37 +52,45 @@ export class ResultsPage implements OnInit {
     });
   }
 
+  get hasApiKey(): boolean {
+    return (SettingsPage.getStoredKey() ?? '').length > 0;
+  }
+
+  generateAiReport(): void {
+    const apiKey = SettingsPage.getStoredKey();
+    if (!apiKey) return;
+
+    this.generatingAi.set(true);
+    this.aiError.set(null);
+
+    this.scanService.generateAiReport(this.scanId, apiKey).subscribe({
+      next: (res) => {
+        this.aiReport.set(res.report);
+        this.generatingAi.set(false);
+      },
+      error: (err) => {
+        this.generatingAi.set(false);
+        this.aiError.set(err?.error?.error ?? 'AI analysis failed');
+      },
+    });
+  }
+
   toggleHost(id: string): void {
     const set = new Set(this.expandedHosts());
-    if (set.has(id)) {
-      set.delete(id);
-    } else {
-      set.add(id);
-    }
+    if (set.has(id)) { set.delete(id); } else { set.add(id); }
     this.expandedHosts.set(set);
   }
 
   togglePort(id: string): void {
     const set = new Set(this.expandedPorts());
-    if (set.has(id)) {
-      set.delete(id);
-    } else {
-      set.add(id);
-    }
+    if (set.has(id)) { set.delete(id); } else { set.add(id); }
     this.expandedPorts.set(set);
   }
 
-  isHostExpanded(id: string): boolean {
-    return this.expandedHosts().has(id);
-  }
+  isHostExpanded(id: string): boolean { return this.expandedHosts().has(id); }
+  isPortExpanded(id: string): boolean { return this.expandedPorts().has(id); }
 
-  isPortExpanded(id: string): boolean {
-    return this.expandedPorts().has(id);
-  }
-
-  goBack(): void {
-    void this.router.navigate(['/history']);
-  }
+  goBack(): void { void this.router.navigate(['/history']); }
 
   openPorts(host: HostDto): number {
     return host.ports.filter((p) => p.state === 'open').length;
@@ -84,33 +100,19 @@ export class ResultsPage implements OnInit {
     return host.ports.reduce((sum, p) => sum + p.cves.length, 0);
   }
 
-  findingClass(severity: string): string {
-    return severity.toLowerCase();
-  }
-
-  riskLevelClass(level: string): string {
-    return level.toLowerCase();
-  }
+  findingClass(severity: string): string { return severity.toLowerCase(); }
+  riskLevelClass(level: string): string { return level.toLowerCase(); }
 
   expandedFindings = signal<Set<number>>(new Set());
 
   toggleFinding(index: number): void {
     const set = new Set(this.expandedFindings());
-    if (set.has(index)) {
-      set.delete(index);
-    } else {
-      set.add(index);
-    }
+    if (set.has(index)) { set.delete(index); } else { set.add(index); }
     this.expandedFindings.set(set);
   }
 
-  isFindingExpanded(index: number): boolean {
-    return this.expandedFindings().has(index);
-  }
-
-  hasCves(finding: AnalysisFinding): boolean {
-    return finding.relatedCves.length > 0;
-  }
+  isFindingExpanded(index: number): boolean { return this.expandedFindings().has(index); }
+  hasCves(finding: AnalysisFinding): boolean { return finding.relatedCves.length > 0; }
 
   cvssClass(score: number | null): string {
     if (score === null) return 'none';
@@ -120,9 +122,7 @@ export class ResultsPage implements OnInit {
     return 'low';
   }
 
-  statusClass(status: string): string {
-    return status.toLowerCase();
-  }
+  statusClass(status: string): string { return status.toLowerCase(); }
 
   durationSeconds(): string {
     const r = this.results();

@@ -11,10 +11,44 @@
     "test": "ng test",
     "electron:tsc": "tsc -p tsconfig.electron.json",
     "electron:dev": "npm run electron:tsc && cross-env NODE_ENV=development concurrently \"ng serve\" \"wait-on http://localhost:4200 && electron .\"",
-    "electron:build": "npm run electron:tsc && cross-env NODE_ENV=production ng build && electron-builder"
+    "electron:build": "npm run electron:tsc && cross-env NODE_ENV=production ng build && electron-builder",
+    "electron:dist": "cd ../backend && mvn package -q -DskipTests && cd ../frontend && npm run electron:build"
   },
   "private": true,
   "packageManager": "npm@11.9.0",
+  "build": {
+    "appId": "com.netsentinel.app",
+    "productName": "NetSentinel",
+    "copyright": "NetSentinel Security",
+    "directories": {
+      "output": "dist-installer",
+      "buildResources": "build-resources"
+    },
+    "extraResources": [
+      {
+        "from": "../backend/target/backend-0.0.1-SNAPSHOT.jar",
+        "to": "backend.jar"
+      },
+      {
+        "from": "installer/",
+        "to": "installer/"
+      }
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NetSentinel",
+      "installerHeaderIcon": "build-resources/icon.ico",
+      "include": "installer/setup.nsh"
+    }
+  },
   "dependencies": {
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",

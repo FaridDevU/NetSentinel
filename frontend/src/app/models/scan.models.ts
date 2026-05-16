@@ -87,3 +87,9 @@ export interface StartScanResponse {
   target: string;
   status: ScanStatus;
 }
+
+export interface LocalNetworkInterface {
+  name: string;
+  ip: string;
+  subnet: string;
+}

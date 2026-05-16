@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  LocalNetworkInterface,
   PagedResponse,
   ScanResultsResponse,
   ScanStatusResponse,
@@ -44,5 +45,13 @@ export class ScanService {
     return this.http.get<PagedResponse<ScanStatusResponse>>(
       `${this.base}/history?page=${page}&size=${size}`
     );
+  }
+
+  generateAiReport(scanId: string, apiKey: string): Observable<{ report: string }> {
+    return this.http.post<{ report: string }>(`${this.base}/scan/${scanId}/ai-report`, { apiKey });
+  }
+
+  getLocalNetworks(): Observable<LocalNetworkInterface[]> {
+    return this.http.get<LocalNetworkInterface[]>(`${this.base}/network/local`);
   }
 }
