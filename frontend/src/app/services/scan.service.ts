@@ -54,4 +54,8 @@ export class ScanService {
   getLocalNetworks(): Observable<LocalNetworkInterface[]> {
     return this.http.get<LocalNetworkInterface[]>(`${this.base}/network/local`);
   }
+
+  getScanLogs(id: string): Observable<{ lines: string[] }> {
+    return this.http.get<{ lines: string[] }>(`${this.base}/scan/${id}/logs`);
+  }
 }

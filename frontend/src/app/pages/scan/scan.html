@@ -111,6 +111,14 @@
         </div>
       }
 
+      @if (scanLogs().length > 0) {
+        <div class="scan-terminal" #terminal>
+          @for (line of scanLogs(); track $index) {
+            <div [class]="'terminal-line' + ($index === scanLogs().length - 1 ? ' active' : '')">{{ line }}</div>
+          }
+        </div>
+      }
+
       @if (errorMessage()) {
         <div class="error-block">{{ errorMessage() }}</div>
       }
