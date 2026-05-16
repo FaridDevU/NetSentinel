@@ -73,10 +73,10 @@ async function createWindow(): Promise<void> {
   Menu.setApplicationMenu(null);
 
   mainWindow = new BrowserWindow({
-    width: 960,
-    height: 540,
-    minWidth: 760,
-    minHeight: 460,
+    width: 1200,
+    height: 680,
+    minWidth: 900,
+    minHeight: 560,
     backgroundColor: '#1e1e1e',
     autoHideMenuBar: true,
     icon,
