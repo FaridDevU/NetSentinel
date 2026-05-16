@@ -13,7 +13,7 @@ public record ScanResultsResponse(
         Instant startedAt,
         Instant completedAt,
         List<HostDto> hosts,
-        String aiReport
+        AnalysisReport analysis
 ) {
     public record HostDto(
             UUID id,

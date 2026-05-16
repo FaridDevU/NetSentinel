@@ -65,6 +65,14 @@ public class ScanJobUpdater {
     }
 
     @Transactional
+    public void saveAnalysis(UUID scanJobId, String analysisJson) {
+        scanJobRepository.findById(scanJobId).ifPresent(job -> {
+            job.setAiReport(analysisJson);
+            scanJobRepository.save(job);
+        });
+    }
+
+    @Transactional
     public void deleteScan(UUID scanJobId) {
         scanJobRepository.deleteById(scanJobId);
     }

@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ScanService } from '../../services/scan.service';
-import { HostDto, ScanResultsResponse } from '../../models/scan.models';
+import { AnalysisFinding, HostDto, ScanResultsResponse } from '../../models/scan.models';
 
 @Component({
   selector: 'app-results',
@@ -82,6 +82,34 @@ export class ResultsPage implements OnInit {
 
   totalCves(host: HostDto): number {
     return host.ports.reduce((sum, p) => sum + p.cves.length, 0);
+  }
+
+  findingClass(severity: string): string {
+    return severity.toLowerCase();
+  }
+
+  riskLevelClass(level: string): string {
+    return level.toLowerCase();
+  }
+
+  expandedFindings = signal<Set<number>>(new Set());
+
+  toggleFinding(index: number): void {
+    const set = new Set(this.expandedFindings());
+    if (set.has(index)) {
+      set.delete(index);
+    } else {
+      set.add(index);
+    }
+    this.expandedFindings.set(set);
+  }
+
+  isFindingExpanded(index: number): boolean {
+    return this.expandedFindings().has(index);
+  }
+
+  hasCves(finding: AnalysisFinding): boolean {
+    return finding.relatedCves.length > 0;
   }
 
   cvssClass(score: number | null): string {
