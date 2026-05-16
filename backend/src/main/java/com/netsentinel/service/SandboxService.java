@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +35,10 @@ public class SandboxService {
     public record SandboxResult(boolean success, String output, String error) {}
 
     public SandboxResult runNmap(String target, List<String> parameters) {
-        return execute("nmap", target, parameters, 600);
+        List<String> args = new ArrayList<>(parameters);
+        args.add("-oX");
+        args.add("-");
+        return execute("nmap", target, args, 600);
     }
 
     public SandboxResult runGobuster(String target, List<String> parameters) {
