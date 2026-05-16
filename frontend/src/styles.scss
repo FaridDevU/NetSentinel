@@ -1,36 +1,34 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #0d1117;
-  --surface: #161b22;
-  --elevated: #21262d;
-  --border: #30363d;
-  --accent: #0ea5e9;
-  --accent-hover: #38bdf8;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
-  --success: #3fb950;
-  --warning: #d29922;
-  --danger: #f85149;
-  --info: #58a6ff;
+  --bg:           #1e1e1e;
+  --surface:      #2d2d2e;
+  --elevated:     #3a3a3c;
+  --border:       rgba(84, 84, 88, 0.48);
+  --accent:       #317ef6;
+  --accent-hover: #508cf8;
+  --accent-dim:   rgba(49, 126, 246, 0.14);
+  --text-primary:   #f2f2f7;
+  --text-secondary: #98989f;
+  --text-muted:     #5e5e62;
+  --success: #30d158;
+  --warning: #ffd426;
+  --danger:  #ff453a;
+  --info:    #32ade6;
 }
 
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html,
-body {
+html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -38,34 +36,18 @@ body {
 a {
   color: var(--accent);
   text-decoration: none;
-
-  &:hover {
-    color: var(--accent-hover);
-  }
+  &:hover { color: var(--accent-hover); }
 }
 
-input,
-textarea,
-select,
-button {
+input, textarea, select, button {
   font-family: inherit;
   font-size: inherit;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--surface);
-}
-
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(84, 84, 88, 0.45);
   border-radius: 3px;
-
-  &:hover {
-    background: var(--text-muted);
-  }
+  &:hover { background: rgba(84, 84, 88, 0.75); }
 }

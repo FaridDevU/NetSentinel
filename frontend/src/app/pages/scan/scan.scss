@@ -1,67 +1,73 @@
 .page {
-  padding: 32px;
-  max-width: 680px;
+  padding: 20px 24px;
+  max-width: 620px;
 }
 
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .page-title {
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .page-subtitle {
-  font-size: 13px;
+  font-size: 11.5px;
   color: var(--text-secondary);
 }
 
 .form-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 24px;
+  border-radius: 5px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
 }
 
 .form-label {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .form-input {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 3px;
   color: var(--text-primary);
-  padding: 8px 11px;
-  font-size: 13.5px;
+  padding: 6px 9px;
+  font-size: 12.5px;
   outline: none;
-  transition: border-color 0.15s;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 
-  &::placeholder {
-    color: var(--text-muted);
+  &::placeholder { color: var(--text-muted); }
+
+  &:hover {
+    border-color: rgba(84, 84, 88, 0.8);
   }
 
   &:focus {
     border-color: var(--accent);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(49, 126, 246, 0.22);
   }
 
   &.mono {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
@@ -72,36 +78,44 @@
 }
 
 .form-hint {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-muted);
+}
+
+.form-error {
+  font-size: 11px;
+  color: var(--danger);
+}
+
+.input-error {
+  border-color: var(--danger) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(255, 69, 58, 0.18) !important;
+}
+
+.input-ok {
+  border-color: var(--success) !important;
 }
 
 .detect-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   background: none;
   border: none;
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--accent);
   cursor: pointer;
   padding: 0;
-  transition: color 0.15s;
+  transition: color 150ms ease;
 
-  &:hover:not(:disabled) {
-    color: var(--accent-hover);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  &:hover:not(:disabled) { color: var(--accent-hover); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 
 .detect-spinner {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid rgba(14, 165, 233, 0.3);
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid rgba(49, 126, 246, 0.25);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -111,11 +125,11 @@
 .network-picker {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px;
+  gap: 5px;
+  padding: 8px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 3px;
 }
 
 .network-chip {
@@ -125,26 +139,26 @@
   gap: 1px;
   background: var(--elevated);
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 6px 10px;
+  border-radius: 3px;
+  padding: 5px 9px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 150ms, background 150ms;
 
   &:hover {
-    border-color: rgba(14, 165, 233, 0.5);
-    background: rgba(14, 165, 233, 0.05);
+    border-color: rgba(49, 126, 246, 0.5);
+    background: var(--accent-dim);
   }
 }
 
 .chip-subnet {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--text-primary);
   font-weight: 500;
 }
 
 .chip-name {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--text-muted);
   max-width: 180px;
   overflow: hidden;
@@ -152,65 +166,52 @@
   white-space: nowrap;
 }
 
-.form-error {
-  font-size: 11.5px;
-  color: var(--danger);
-}
-
-.input-error {
-  border-color: var(--danger) !important;
-}
-
-.input-ok {
-  border-color: var(--success) !important;
-}
-
 .profiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .profile-card {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: 4px;
+  padding: 10px;
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 150ms ease, background 150ms ease;
 
   &:hover {
-    border-color: rgba(14, 165, 233, 0.5);
-    background: rgba(14, 165, 233, 0.03);
+    border-color: rgba(49, 126, 246, 0.4);
+    background: rgba(49, 126, 246, 0.03);
   }
 
   &.selected {
     border-color: var(--accent);
-    background: rgba(14, 165, 233, 0.07);
+    background: var(--accent-dim);
   }
 }
 
 .profile-label {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .profile-desc {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .profile-flags {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--accent);
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 .form-actions {
@@ -221,18 +222,15 @@
 }
 
 .btn {
-  padding: 7px 16px;
-  border-radius: 6px;
+  padding: 5px 14px;
+  border-radius: 3px;
   border: 1px solid transparent;
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background 150ms ease, border-color 150ms ease, opacity 150ms ease;
 
-  &:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
 
   &.btn-primary {
     background: var(--accent);
@@ -246,83 +244,64 @@
   }
 
   &.btn-secondary {
-    background: var(--elevated);
+    background: transparent;
     color: var(--text-primary);
     border-color: var(--border);
 
-    &:hover {
-      background: var(--border);
-    }
+    &:hover { background: var(--elevated); }
   }
 
   &.btn-danger {
     background: transparent;
     color: var(--danger);
-    border-color: var(--danger);
+    border-color: rgba(255, 69, 58, 0.5);
 
-    &:hover {
-      background: rgba(248, 81, 73, 0.1);
-    }
+    &:hover { background: rgba(255, 69, 58, 0.1); }
   }
 }
 
+/* ---- Scan status card ---- */
 .scan-status-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 24px;
+  border-radius: 5px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .status-header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .status-indicator {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 
-  &.pending,
-  &.running {
-    background: rgba(14, 165, 233, 0.12);
-  }
-
-  &.completed {
-    background: rgba(63, 185, 80, 0.12);
-  }
-
-  &.failed {
-    background: rgba(248, 81, 73, 0.12);
-  }
-
-  &.cancelled {
-    background: rgba(139, 148, 158, 0.12);
-  }
+  &.pending, &.running  { background: var(--accent-dim); }
+  &.completed { background: rgba(48, 209, 88, 0.12); }
+  &.failed    { background: rgba(255, 69, 58, 0.12); }
+  &.cancelled { background: rgba(94, 94, 98, 0.2); }
 }
 
 .spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--border);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(49, 126, 246, 0.2);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .status-info {
   flex: 1;
@@ -332,28 +311,28 @@
 }
 
 .status-text {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .status-target {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-secondary);
 }
 
 .elapsed {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .progress-bar {
   height: 2px;
-  background: var(--border);
+  background: var(--elevated);
   border-radius: 1px;
   overflow: hidden;
 }
@@ -366,31 +345,22 @@
 }
 
 @keyframes progress-indeterminate {
-  0% {
-    width: 5%;
-    margin-left: 0;
-  }
-  50% {
-    width: 60%;
-    margin-left: 30%;
-  }
-  100% {
-    width: 5%;
-    margin-left: 95%;
-  }
+  0%   { width: 5%; margin-left: 0; }
+  50%  { width: 60%; margin-left: 30%; }
+  100% { width: 5%; margin-left: 95%; }
 }
 
 .error-block {
-  background: rgba(248, 81, 73, 0.07);
-  border: 1px solid rgba(248, 81, 73, 0.25);
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 13px;
+  background: rgba(255, 69, 58, 0.07);
+  border: 1px solid rgba(255, 69, 58, 0.22);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
   color: var(--danger);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .status-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
