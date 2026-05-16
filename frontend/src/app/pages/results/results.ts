@@ -1,12 +1,12 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ScanService } from '../../services/scan.service';
 import { AnalysisFinding, HostDto, ScanResultsResponse } from '../../models/scan.models';
 
 @Component({
   selector: 'app-results',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './results.html',
   styleUrl: './results.scss',
 })

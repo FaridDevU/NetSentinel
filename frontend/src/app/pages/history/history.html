@@ -43,6 +43,9 @@
                 </td>
                 <td>
                   <span [class]="'badge ' + statusClass(scan.status)">
+                    @if (isActive(scan.status)) {
+                      <span class="badge-dot"></span>
+                    }
                     {{ scan.status }}
                   </span>
                 </td>

@@ -25,6 +25,22 @@ export class ScanPage implements OnDestroy {
   target = '';
   selectedProfile: ScanProfile = 'quick';
   customFlags = '';
+  targetTouched = false;
+
+  private static readonly TARGET_REGEX = /^[a-zA-Z0-9.\-:/\[\]]{1,100}$/;
+
+  get targetError(): string | null {
+    if (!this.targetTouched || !this.target.trim()) return null;
+    if (!ScanPage.TARGET_REGEX.test(this.target.trim())) {
+      return 'Only letters, numbers, dots, hyphens, colons, slashes, and brackets allowed';
+    }
+    return null;
+  }
+
+  get targetValid(): boolean {
+    const t = this.target.trim();
+    return t.length > 0 && ScanPage.TARGET_REGEX.test(t);
+  }
 
   scanning = signal(false);
   currentScanId = signal<string | null>(null);

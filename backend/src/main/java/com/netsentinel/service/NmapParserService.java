@@ -17,7 +17,7 @@ public class NmapParserService {
     private static final Pattern HOST_BLOCK_SPLITTER = Pattern.compile("Nmap scan report for ");
     private static final Pattern IP_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)");
     private static final Pattern OS_PATTERN = Pattern.compile("OS details: ([^\n]+)");
-    private static final Pattern PORT_LINE_PATTERN = Pattern.compile("(\\d+)/(tcp|udp)\\s+(\\w+)\\s+(.*)");
+    private static final Pattern PORT_LINE_PATTERN = Pattern.compile("(\\d+)/(tcp|udp)\\s+([\\w|]+)\\s+(.*)");
     private static final Pattern MAC_PATTERN = Pattern.compile("MAC Address: ([0-9A-Fa-f:]+) \\(([^)]+)\\)");
 
     public List<NetworkHost> parse(String rawOutput, ScanJob scanJob) {

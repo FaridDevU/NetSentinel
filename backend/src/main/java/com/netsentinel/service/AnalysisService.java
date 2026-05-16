@@ -117,9 +117,8 @@ public class AnalysisService {
         String title = String.format("%s%s — %d %s CVE%s on port %d",
                 capitalize(service), version, count, severity.toLowerCase(), count > 1 ? "s" : "", port.getPortNumber());
 
-        String excerpt = top.getDescription() != null && top.getDescription().length() > 200
-                ? top.getDescription().substring(0, 200) + "..."
-                : top.getDescription();
+        String desc = top.getDescription() != null ? top.getDescription() : "No description available.";
+        String excerpt = desc.length() > 200 ? desc.substring(0, 200) + "..." : desc;
 
         String detail = String.format(
                 "Host %s exposes %s%s on port %d/%s. %d %s-severity vulnerabilit%s identified: %s. " +
