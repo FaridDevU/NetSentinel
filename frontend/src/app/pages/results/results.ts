@@ -1,20 +1,15 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
+import { Subscription, timer } from 'rxjs';
+import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { SettingsPage } from '../settings/settings';
 import { AnalysisFinding, HostDto, ScanResultsResponse } from '../../models/scan.models';
 
-export interface ReportItem {
-  type: 'p' | 'li' | 'h4';
-  text: string;
-}
-
-export interface ReportSection {
-  title: string;
-  items: ReportItem[];
-}
+export interface ReportItem { type: 'p' | 'li' | 'h4'; text: string; }
+export interface ReportSection { title: string; items: ReportItem[]; }
 
 @Component({
   selector: 'app-results',
@@ -22,12 +17,15 @@ export interface ReportSection {
   templateUrl: './results.html',
   styleUrl: './results.scss',
 })
-export class ResultsPage implements OnInit {
+export class ResultsPage implements OnInit, OnDestroy {
+  @ViewChild('liveTerminal') liveTerminalRef?: ElementRef<HTMLDivElement>;
+
   results = signal<ScanResultsResponse | null>(null);
   loading = signal(true);
   error = signal<string | null>(null);
   expandedHosts = signal<Set<string>>(new Set());
   expandedPorts = signal<Set<string>>(new Set());
+  scanLogs = signal<string[]>([]);
 
   aiReport = signal<string | null>(null);
   generatingAi = signal(false);
@@ -35,11 +33,12 @@ export class ResultsPage implements OnInit {
 
   parsedReport = computed<ReportSection[]>(() => {
     const raw = this.aiReport();
-    if (!raw) return [];
-    return this.parseReport(raw);
+    return raw ? this.parseReport(raw) : [];
   });
 
   private scanId = '';
+  private logSub?: Subscription;
+  private statusSub?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -49,11 +48,9 @@ export class ResultsPage implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      void this.router.navigate(['/history']);
-      return;
-    }
+    if (!id) { void this.router.navigate(['/history']); return; }
     this.scanId = id;
+
     this.scanService.getResults(id).subscribe({
       next: (res) => {
         this.results.set(res);
@@ -61,12 +58,66 @@ export class ResultsPage implements OnInit {
         if (res.hosts.length > 0) {
           this.expandedHosts.set(new Set([res.hosts[0].id]));
         }
+        if (res.status === 'PENDING' || res.status === 'RUNNING') {
+          this.startLivePolling(id);
+        }
       },
       error: () => {
         this.error.set('Failed to load scan results');
         this.loading.set(false);
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    this.logSub?.unsubscribe();
+    this.statusSub?.unsubscribe();
+  }
+
+  private startLivePolling(id: string): void {
+    this.logSub = timer(600, 2000)
+      .pipe(switchMap(() => this.scanService.getScanLogs(id)))
+      .subscribe({
+        next: (res) => {
+          this.scanLogs.set(res.lines);
+          setTimeout(() => {
+            if (this.liveTerminalRef?.nativeElement) {
+              const el = this.liveTerminalRef.nativeElement;
+              el.scrollTop = el.scrollHeight;
+            }
+          }, 20);
+        },
+        error: () => {},
+      });
+
+    this.statusSub = timer(3000, 3000)
+      .pipe(
+        switchMap(() => this.scanService.getStatus(id)),
+        takeWhile(s => s.status === 'PENDING' || s.status === 'RUNNING', true)
+      )
+      .subscribe({
+        next: (status) => {
+          if (status.status !== 'PENDING' && status.status !== 'RUNNING') {
+            this.logSub?.unsubscribe();
+            // Fetch final logs once
+            this.scanService.getScanLogs(id).subscribe({
+              next: (r) => this.scanLogs.set(r.lines),
+              error: () => {},
+            });
+            // Reload full results
+            this.scanService.getResults(id).subscribe({
+              next: (res) => {
+                this.results.set(res);
+                if (res.hosts.length > 0) {
+                  this.expandedHosts.set(new Set([res.hosts[0].id]));
+                }
+              },
+              error: () => {},
+            });
+          }
+        },
+        error: () => {},
+      });
   }
 
   get hasApiKey(): boolean {
@@ -85,6 +136,16 @@ export class ResultsPage implements OnInit {
       next: (res) => {
         this.aiReport.set(res.report);
         this.generatingAi.set(false);
+        const r = this.results();
+        if (r) {
+          localStorage.setItem(`ns_report_${this.scanId}`, JSON.stringify({
+            scanId: this.scanId,
+            target: r.target,
+            date: r.completedAt ?? r.startedAt,
+            report: res.report,
+            riskLevel: r.analysis?.riskLevel,
+          }));
+        }
       },
       error: (err) => {
         this.generatingAi.set(false);
@@ -96,10 +157,8 @@ export class ResultsPage implements OnInit {
   private parseReport(text: string): ReportSection[] {
     const sections: ReportSection[] = [];
     let current: ReportSection | null = null;
-
     for (const line of text.split('\n')) {
       const t = line.trim();
-
       if (t.startsWith('## ')) {
         if (current) sections.push(current);
         current = { title: this.stripMd(t.slice(3)), items: [] };
@@ -119,10 +178,7 @@ export class ResultsPage implements OnInit {
   }
 
   private stripMd(text: string): string {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/`(.*?)`/g, '$1');
+    return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/`(.*?)`/g, '$1');
   }
 
   toggleHost(id: string): void {
@@ -139,28 +195,18 @@ export class ResultsPage implements OnInit {
 
   isHostExpanded(id: string): boolean { return this.expandedHosts().has(id); }
   isPortExpanded(id: string): boolean { return this.expandedPorts().has(id); }
-
   goBack(): void { void this.router.navigate(['/history']); }
-
-  openPorts(host: HostDto): number {
-    return host.ports.filter((p) => p.state === 'open').length;
-  }
-
-  totalCves(host: HostDto): number {
-    return host.ports.reduce((sum, p) => sum + p.cves.length, 0);
-  }
-
+  openPorts(host: HostDto): number { return host.ports.filter((p) => p.state === 'open').length; }
+  totalCves(host: HostDto): number { return host.ports.reduce((sum, p) => sum + p.cves.length, 0); }
   findingClass(severity: string): string { return severity.toLowerCase(); }
   riskLevelClass(level: string): string { return level.toLowerCase(); }
 
   expandedFindings = signal<Set<number>>(new Set());
-
   toggleFinding(index: number): void {
     const set = new Set(this.expandedFindings());
     if (set.has(index)) { set.delete(index); } else { set.add(index); }
     this.expandedFindings.set(set);
   }
-
   isFindingExpanded(index: number): boolean { return this.expandedFindings().has(index); }
   hasCves(finding: AnalysisFinding): boolean { return finding.relatedCves.length > 0; }
 

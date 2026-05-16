@@ -8,17 +8,18 @@ export const routes: Routes = [
   },
   {
     path: 'history',
-    loadComponent: () =>
-      import('./pages/history/history').then((m) => m.HistoryPage),
+    loadComponent: () => import('./pages/history/history').then((m) => m.HistoryPage),
   },
   {
     path: 'results/:id',
-    loadComponent: () =>
-      import('./pages/results/results').then((m) => m.ResultsPage),
+    loadComponent: () => import('./pages/results/results').then((m) => m.ResultsPage),
+  },
+  {
+    path: 'reports',
+    loadComponent: () => import('./pages/reports/reports').then((m) => m.ReportsPage),
   },
   {
     path: 'settings',
-    loadComponent: () =>
-      import('./pages/settings/settings').then((m) => m.SettingsPage),
+    loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsPage),
   },
 ];

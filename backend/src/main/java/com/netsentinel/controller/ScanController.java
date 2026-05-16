@@ -128,6 +128,11 @@ public class ScanController {
         return ResponseEntity.ok(scanService.getHistory(page, size));
     }
 
+    @GetMapping("/scan/{id}/logs")
+    public ResponseEntity<?> getScanLogs(@PathVariable UUID id) {
+        return ResponseEntity.ok(Map.of("lines", scanService.getLogs(id)));
+    }
+
     @GetMapping("/network/local")
     public ResponseEntity<?> getLocalNetworks() {
         try {

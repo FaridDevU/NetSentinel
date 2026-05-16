@@ -20,14 +20,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class ScanService {
 
     private static final Logger log = LoggerFactory.getLogger(ScanService.class);
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private final Map<UUID, List<String>> scanLogs = new ConcurrentHashMap<>();
 
     private final ScanJobRepository scanJobRepository;
     private final SandboxService sandboxService;
@@ -63,47 +70,85 @@ public class ScanService {
     public void executeScan(UUID scanJobId) {
         ScanJob job = scanJobUpdater.markRunning(scanJobId);
         log.info("Starting scan {} for target {}", scanJobId, job.getTarget());
+        addLog(scanJobId, "Scan started — target: " + job.getTarget());
+
+        String flags = String.join(" ", job.getParameters());
+        addLog(scanJobId, "Running nmap " + (flags.isBlank() ? "(default)" : flags) + " ...");
 
         SandboxService.SandboxResult result = sandboxService.runNmap(job.getTarget(), job.getParameters());
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
             log.info("Scan {} cancelled during sandbox execution", scanJobId);
+            addLog(scanJobId, "Scan cancelled.");
             return;
         }
 
         if (!result.success()) {
             scanJobUpdater.markFailed(scanJobId, result.error());
             log.error("Scan {} failed: {}", scanJobId, result.error());
+            addLog(scanJobId, "nmap error: " + result.error());
             return;
         }
 
         List<NetworkHost> hosts = nmapParserService.parse(result.output(), job);
+        addLog(scanJobId, "nmap finished — " + hosts.size() + " host(s) found");
+
+        long openPorts = hosts.stream()
+                .flatMap(h -> h.getPorts().stream())
+                .filter(p -> "open".equals(p.getState()) && p.getService() != null)
+                .count();
+
+        if (openPorts > 0) {
+            addLog(scanJobId, "Checking CVE database for " + openPorts + " open service(s)...");
+        }
 
         for (NetworkHost host : hosts) {
             for (NetworkPort port : host.getPorts()) {
                 if ("open".equals(port.getState()) && port.getService() != null) {
                     List<CveEntry> cves = nvdService.lookupCves(port.getService(), port.getVersion(), port);
                     port.setCves(cves);
+                    if (!cves.isEmpty()) {
+                        addLog(scanJobId, "  " + host.getIp() + ":" + port.getPortNumber()
+                                + " (" + port.getService() + ") — " + cves.size() + " CVE(s)");
+                    }
                 }
             }
         }
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
             log.info("Scan {} cancelled before save", scanJobId);
+            addLog(scanJobId, "Scan cancelled.");
             return;
         }
 
         scanJobUpdater.saveResults(scanJobId, result.output(), hosts);
         log.info("Scan {} completed with {} hosts", scanJobId, hosts.size());
 
+        addLog(scanJobId, "Running security risk analysis...");
         try {
             AnalysisReport report = analysisService.analyze(job.getTarget(), hosts);
             String reportJson = objectMapper.writeValueAsString(report);
             scanJobUpdater.saveAnalysis(scanJobId, reportJson);
             log.info("Analysis saved for scan {} — risk: {}", scanJobId, report.riskLevel());
+
+            int totalCves = hosts.stream()
+                    .flatMap(h -> h.getPorts().stream())
+                    .mapToInt(p -> p.getCves().size()).sum();
+            addLog(scanJobId, "Done — " + hosts.size() + " host(s), " + totalCves + " CVE(s) found. Risk: " + report.riskLevel());
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize analysis for scan {}: {}", scanJobId, e.getMessage());
+            addLog(scanJobId, "Done — " + hosts.size() + " host(s) found.");
         }
+    }
+
+    private void addLog(UUID id, String msg) {
+        String ts = LocalTime.now().format(TIME_FMT);
+        scanLogs.computeIfAbsent(id, k -> new CopyOnWriteArrayList<>())
+                .add("[" + ts + "] " + msg);
+    }
+
+    public List<String> getLogs(UUID id) {
+        return scanLogs.getOrDefault(id, List.of());
     }
 
     public boolean cancelScan(UUID id) {

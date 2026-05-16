@@ -11,13 +11,25 @@
   }
 
   @if (!loading() && results() && (results()!.status === 'PENDING' || results()!.status === 'RUNNING')) {
-    <div class="scan-running-state">
-      <div class="spinner"></div>
-      <div class="running-info">
-        <span class="running-title">{{ 'results.inProgress' | t }}</span>
-        <code class="running-target">{{ results()!.target }}</code>
+    <div class="live-view">
+      <div class="live-header">
+        <div class="spinner-sm"></div>
+        <div class="live-info">
+          <span class="live-status">{{ results()!.status }}</span>
+          <code class="live-target">{{ results()!.target }}</code>
+        </div>
       </div>
-      <a routerLink="/scan" class="btn-go-live">{{ 'results.liveProgress' | t }}</a>
+      @if (scanLogs().length > 0) {
+        <div class="live-terminal" #liveTerminal>
+          @for (line of scanLogs(); track $index) {
+            <div [class]="'terminal-line' + ($index === scanLogs().length - 1 ? ' active' : '')">{{ line }}</div>
+          }
+        </div>
+      } @else {
+        <div class="live-waiting">
+          <span>Waiting for nmap to start...</span>
+        </div>
+      }
     </div>
   }
 
