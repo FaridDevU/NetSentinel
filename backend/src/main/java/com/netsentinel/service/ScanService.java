@@ -1,6 +1,7 @@
 package com.netsentinel.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netsentinel.dto.AnalysisReport;
 import com.netsentinel.dto.PagedResponse;
@@ -68,6 +69,14 @@ public class ScanService {
 
     @Async("scanExecutor")
     public void executeScan(UUID scanJobId) {
+        try {
+            runScan(scanJobId);
+        } finally {
+            persistLogs(scanJobId);
+        }
+    }
+
+    private void runScan(UUID scanJobId) {
         ScanJob job = scanJobUpdater.markRunning(scanJobId);
         log.info("Starting scan {} for target {}", scanJobId, job.getTarget());
         addLog(scanJobId, "Scan started — target: " + job.getTarget());
@@ -141,6 +150,16 @@ public class ScanService {
         }
     }
 
+    private void persistLogs(UUID scanJobId) {
+        try {
+            List<String> logs = scanLogs.getOrDefault(scanJobId, List.of());
+            String logsJson = objectMapper.writeValueAsString(logs);
+            scanJobUpdater.saveLogs(scanJobId, logsJson);
+        } catch (Exception e) {
+            log.warn("Failed to persist logs for scan {}: {}", scanJobId, e.getMessage());
+        }
+    }
+
     private void addLog(UUID id, String msg) {
         String ts = LocalTime.now().format(TIME_FMT);
         scanLogs.computeIfAbsent(id, k -> new CopyOnWriteArrayList<>())
@@ -148,7 +167,20 @@ public class ScanService {
     }
 
     public List<String> getLogs(UUID id) {
-        return scanLogs.getOrDefault(id, List.of());
+        List<String> inMemory = scanLogs.get(id);
+        if (inMemory != null && !inMemory.isEmpty()) {
+            return inMemory;
+        }
+        return scanJobRepository.findById(id)
+                .map(job -> {
+                    if (job.getScanLogs() == null) return List.<String>of();
+                    try {
+                        return objectMapper.readValue(job.getScanLogs(), new TypeReference<List<String>>() {});
+                    } catch (Exception e) {
+                        return List.<String>of();
+                    }
+                })
+                .orElse(List.of());
     }
 
     public boolean cancelScan(UUID id) {

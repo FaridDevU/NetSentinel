@@ -48,6 +48,9 @@ public class ScanJob {
     @Column(columnDefinition = "TEXT")
     private String aiReport;
 
+    @Column(name = "scan_logs", columnDefinition = "TEXT")
+    private String scanLogs;
+
     @OneToMany(mappedBy = "scanJob", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NetworkHost> hosts = new ArrayList<>();
 
