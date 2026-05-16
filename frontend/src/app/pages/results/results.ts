@@ -202,6 +202,8 @@ export class ResultsPage implements OnInit, OnDestroy {
   riskLevelClass(level: string): string { return level.toLowerCase(); }
 
   expandedFindings = signal<Set<number>>(new Set());
+  showTechnical = signal(false);
+
   toggleFinding(index: number): void {
     const set = new Set(this.expandedFindings());
     if (set.has(index)) { set.delete(index); } else { set.add(index); }
@@ -228,5 +230,37 @@ export class ResultsPage implements OnInit, OnDestroy {
     );
     if (diff < 60) return `${diff}s`;
     return `${Math.floor(diff / 60)}m ${diff % 60}s`;
+  }
+
+  riskBannerClass(): string {
+    return (this.results()?.analysis?.riskLevel ?? 'info').toLowerCase();
+  }
+
+  riskTitleKey(): string {
+    const level = (this.results()?.analysis?.riskLevel ?? 'info').toLowerCase();
+    return `results.risk.${level}`;
+  }
+
+  riskSubKey(): string {
+    const level = (this.results()?.analysis?.riskLevel ?? 'info').toLowerCase();
+    return `results.risk.${level}.sub`;
+  }
+
+  devicesCount(): number {
+    return this.results()?.hosts.length ?? 0;
+  }
+
+  problemsCount(): number {
+    return this.results()?.analysis?.findings.length ?? 0;
+  }
+
+  deviceLabel(host: { ip: string; hostname: string | null; vendor: string | null }): string {
+    if (host.hostname) return host.hostname;
+    if (host.vendor) return `${host.vendor} (${host.ip})`;
+    return host.ip;
+  }
+
+  friendlySeverityKey(severity: string): string {
+    return `severity.${severity.toLowerCase()}`;
   }
 }
