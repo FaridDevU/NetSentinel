@@ -122,6 +122,220 @@
   }
 }
 
+.analysis-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.analysis-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.analysis-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.analysis-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+
+  &.critical { background: rgba(248, 81, 73, 0.15); color: var(--danger); }
+  &.high     { background: rgba(240, 136, 62, 0.15); color: #f0883e; }
+  &.medium   { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
+  &.low      { background: rgba(63, 185, 80, 0.12); color: var(--success); }
+  &.info     { background: var(--elevated); color: var(--text-secondary); }
+}
+
+.risk-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.analysis-summary {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.findings-list {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subsection-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.findings-count {
+  background: var(--elevated);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.finding-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.finding-header {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--elevated);
+  }
+}
+
+.finding-severity {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  flex-shrink: 0;
+
+  &.critical { background: rgba(248, 81, 73, 0.15); color: var(--danger); }
+  &.high     { background: rgba(240, 136, 62, 0.12); color: #f0883e; }
+  &.medium   { background: rgba(210, 153, 34, 0.12); color: var(--warning); }
+  &.low      { background: rgba(63, 185, 80, 0.1); color: var(--success); }
+  &.info     { background: var(--elevated); color: var(--text-muted); }
+}
+
+.finding-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.finding-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.finding-host {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.finding-chevron {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: transform 0.18s;
+
+  &.expanded {
+    transform: rotate(90deg);
+  }
+}
+
+.finding-detail {
+  padding: 12px 14px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.finding-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.finding-cves {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cves-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.cve-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(14, 165, 233, 0.08);
+  padding: 1px 7px;
+  border-radius: 3px;
+}
+
+.recommendations {
+  padding: 16px 20px;
+}
+
+.rec-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rec-item {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+
+  &::before {
+    content: '—';
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+}
+
 .empty-state {
   color: var(--text-secondary);
   font-size: 13.5px;

@@ -36,6 +36,72 @@
       </div>
     </div>
 
+    @if (results()!.analysis) {
+      <div class="analysis-section">
+        <div class="analysis-header">
+          <div class="analysis-title-row">
+            <h2 class="analysis-title">Security Analysis</h2>
+            <span [class]="'risk-badge ' + riskLevelClass(results()!.analysis!.riskLevel)">
+              {{ results()!.analysis!.riskLevel }}
+            </span>
+            <span class="risk-score">{{ results()!.analysis!.riskScore.toFixed(1) }} / 10</span>
+          </div>
+          <p class="analysis-summary">{{ results()!.analysis!.summary }}</p>
+        </div>
+
+        @if (results()!.analysis!.findings.length > 0) {
+          <div class="findings-list">
+            <h3 class="subsection-title">
+              Findings
+              <span class="findings-count">{{ results()!.analysis!.findings.length }}</span>
+            </h3>
+            @for (finding of results()!.analysis!.findings; track $index) {
+              <div class="finding-card">
+                <button class="finding-header" (click)="toggleFinding($index)">
+                  <span [class]="'finding-severity ' + findingClass(finding.severity)">
+                    {{ finding.severity }}
+                  </span>
+                  <span class="finding-title">{{ finding.title }}</span>
+                  <div class="finding-meta">
+                    <code class="finding-host">{{ finding.host }}:{{ finding.port }}</code>
+                    <div [class]="'finding-chevron' + (isFindingExpanded($index) ? ' expanded' : '')">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </div>
+                  </div>
+                </button>
+                @if (isFindingExpanded($index)) {
+                  <div class="finding-detail">
+                    <p class="finding-text">{{ finding.detail }}</p>
+                    @if (hasCves(finding)) {
+                      <div class="finding-cves">
+                        <span class="cves-label">Related CVEs:</span>
+                        @for (cve of finding.relatedCves; track cve) {
+                          <span class="cve-chip">{{ cve }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        @if (results()!.analysis!.recommendations.length > 0) {
+          <div class="recommendations">
+            <h3 class="subsection-title">Recommendations</h3>
+            <ul class="rec-list">
+              @for (rec of results()!.analysis!.recommendations; track $index) {
+                <li class="rec-item">{{ rec }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+
     @if (results()!.hosts.length === 0) {
       <div class="empty-state">No hosts discovered in this scan.</div>
     }

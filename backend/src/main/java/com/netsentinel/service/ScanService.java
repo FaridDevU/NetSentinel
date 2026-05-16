@@ -1,5 +1,8 @@
 package com.netsentinel.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netsentinel.dto.AnalysisReport;
 import com.netsentinel.dto.PagedResponse;
 import com.netsentinel.dto.ScanResultsResponse;
 import com.netsentinel.dto.ScanStatusResponse;
@@ -31,17 +34,23 @@ public class ScanService {
     private final NmapParserService nmapParserService;
     private final NvdService nvdService;
     private final ScanJobUpdater scanJobUpdater;
+    private final AnalysisService analysisService;
+    private final ObjectMapper objectMapper;
 
     public ScanService(ScanJobRepository scanJobRepository,
                        SandboxService sandboxService,
                        NmapParserService nmapParserService,
                        NvdService nvdService,
-                       ScanJobUpdater scanJobUpdater) {
+                       ScanJobUpdater scanJobUpdater,
+                       AnalysisService analysisService,
+                       ObjectMapper objectMapper) {
         this.scanJobRepository = scanJobRepository;
         this.sandboxService = sandboxService;
         this.nmapParserService = nmapParserService;
         this.nvdService = nvdService;
         this.scanJobUpdater = scanJobUpdater;
+        this.analysisService = analysisService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -58,7 +67,7 @@ public class ScanService {
         SandboxService.SandboxResult result = sandboxService.runNmap(job.getTarget(), job.getParameters());
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
-            log.info("Scan {} cancelled during sandbox execution, discarding results", scanJobId);
+            log.info("Scan {} cancelled during sandbox execution", scanJobId);
             return;
         }
 
@@ -80,12 +89,21 @@ public class ScanService {
         }
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
-            log.info("Scan {} cancelled before save, discarding results", scanJobId);
+            log.info("Scan {} cancelled before save", scanJobId);
             return;
         }
 
         scanJobUpdater.saveResults(scanJobId, result.output(), hosts);
         log.info("Scan {} completed with {} hosts", scanJobId, hosts.size());
+
+        try {
+            AnalysisReport report = analysisService.analyze(job.getTarget(), hosts);
+            String reportJson = objectMapper.writeValueAsString(report);
+            scanJobUpdater.saveAnalysis(scanJobId, reportJson);
+            log.info("Analysis saved for scan {} — risk: {}", scanJobId, report.riskLevel());
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize analysis for scan {}: {}", scanJobId, e.getMessage());
+        }
     }
 
     public boolean cancelScan(UUID id) {
@@ -156,6 +174,15 @@ public class ScanService {
                 ))
                 .toList();
 
+        AnalysisReport analysis = null;
+        if (job.getAiReport() != null) {
+            try {
+                analysis = objectMapper.readValue(job.getAiReport(), AnalysisReport.class);
+            } catch (JsonProcessingException e) {
+                log.warn("Could not deserialize analysis for scan {}", job.getId());
+            }
+        }
+
         return new ScanResultsResponse(
                 job.getId(),
                 job.getTarget(),
@@ -163,7 +190,7 @@ public class ScanService {
                 job.getStartedAt(),
                 job.getCompletedAt(),
                 hostDtos,
-                job.getAiReport()
+                analysis
         );
     }
 }

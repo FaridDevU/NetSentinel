@@ -37,6 +37,33 @@ export interface HostDto {
   ports: PortDto[];
 }
 
+export interface AnalysisFinding {
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  title: string;
+  detail: string;
+  host: string;
+  port: number;
+  service: string;
+  relatedCves: string[];
+}
+
+export interface AnalysisHostSummary {
+  ip: string;
+  riskLevel: string;
+  openPorts: number;
+  totalCves: number;
+  summary: string;
+}
+
+export interface AnalysisReport {
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  riskScore: number;
+  summary: string;
+  findings: AnalysisFinding[];
+  hostAnalysis: AnalysisHostSummary[];
+  recommendations: string[];
+}
+
 export interface ScanResultsResponse {
   id: string;
   target: string;
@@ -44,7 +71,7 @@ export interface ScanResultsResponse {
   startedAt: string;
   completedAt: string | null;
   hosts: HostDto[];
-  aiReport: string | null;
+  analysis: AnalysisReport | null;
 }
 
 export interface PagedResponse<T> {
