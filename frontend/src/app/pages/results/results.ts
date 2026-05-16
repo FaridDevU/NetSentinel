@@ -1,13 +1,24 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ScanService } from '../../services/scan.service';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 import { SettingsPage } from '../settings/settings';
 import { AnalysisFinding, HostDto, ScanResultsResponse } from '../../models/scan.models';
 
+export interface ReportItem {
+  type: 'p' | 'li' | 'h4';
+  text: string;
+}
+
+export interface ReportSection {
+  title: string;
+  items: ReportItem[];
+}
+
 @Component({
   selector: 'app-results',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, TranslatePipe],
   templateUrl: './results.html',
   styleUrl: './results.scss',
 })
@@ -21,6 +32,12 @@ export class ResultsPage implements OnInit {
   aiReport = signal<string | null>(null);
   generatingAi = signal(false);
   aiError = signal<string | null>(null);
+
+  parsedReport = computed<ReportSection[]>(() => {
+    const raw = this.aiReport();
+    if (!raw) return [];
+    return this.parseReport(raw);
+  });
 
   private scanId = '';
 
@@ -62,6 +79,7 @@ export class ResultsPage implements OnInit {
 
     this.generatingAi.set(true);
     this.aiError.set(null);
+    this.aiReport.set(null);
 
     this.scanService.generateAiReport(this.scanId, apiKey).subscribe({
       next: (res) => {
@@ -73,6 +91,38 @@ export class ResultsPage implements OnInit {
         this.aiError.set(err?.error?.error ?? 'AI analysis failed');
       },
     });
+  }
+
+  private parseReport(text: string): ReportSection[] {
+    const sections: ReportSection[] = [];
+    let current: ReportSection | null = null;
+
+    for (const line of text.split('\n')) {
+      const t = line.trim();
+
+      if (t.startsWith('## ')) {
+        if (current) sections.push(current);
+        current = { title: this.stripMd(t.slice(3)), items: [] };
+      } else if (t.startsWith('### ')) {
+        current?.items.push({ type: 'h4', text: this.stripMd(t.slice(4)) });
+      } else if (/^[-*] /.test(t)) {
+        current?.items.push({ type: 'li', text: this.stripMd(t.slice(2)) });
+      } else if (/^\d+\. /.test(t)) {
+        current?.items.push({ type: 'li', text: this.stripMd(t.replace(/^\d+\. /, '')) });
+      } else if (t && t !== '---' && t !== '***' && !t.startsWith('# ')) {
+        if (!current) current = { title: '', items: [] };
+        current.items.push({ type: 'p', text: this.stripMd(t) });
+      }
+    }
+    if (current) sections.push(current);
+    return sections;
+  }
+
+  private stripMd(text: string): string {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`(.*?)`/g, '$1');
   }
 
   toggleHost(id: string): void {

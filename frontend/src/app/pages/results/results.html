@@ -2,7 +2,7 @@
   @if (loading()) {
     <div class="loading-state">
       <div class="spinner"></div>
-      <span>Loading results...</span>
+      <span>{{ 'results.loading' | t }}</span>
     </div>
   }
 
@@ -14,10 +14,10 @@
     <div class="scan-running-state">
       <div class="spinner"></div>
       <div class="running-info">
-        <span class="running-title">Scan in progress</span>
+        <span class="running-title">{{ 'results.inProgress' | t }}</span>
         <code class="running-target">{{ results()!.target }}</code>
       </div>
-      <a routerLink="/scan" class="btn-go-live">Monitor live progress</a>
+      <a routerLink="/scan" class="btn-go-live">{{ 'results.liveProgress' | t }}</a>
     </div>
   }
 
@@ -27,7 +27,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
-        History
+        {{ 'results.back' | t }}
       </button>
 
       <div class="header-meta">
@@ -42,16 +42,81 @@
           <span class="meta-sep">·</span>
           <span class="meta-item">{{ durationSeconds() }}</span>
           <span class="meta-sep">·</span>
-          <span class="meta-item">{{ results()!.hosts.length }} host(s)</span>
+          <span class="meta-item">{{ results()!.hosts.length }} {{ 'results.hosts' | t }}</span>
         </div>
       </div>
     </div>
 
+    <!-- AI Report Section -->
+    <div class="ai-report-section">
+      @if (!aiReport() && !generatingAi()) {
+        <div class="ai-report-prompt">
+          @if (hasApiKey) {
+            <div class="ai-prompt-content">
+              <div class="ai-prompt-label">{{ 'results.ai.title' | t }}</div>
+              <p class="ai-prompt-desc">{{ 'results.ai.desc' | t }}</p>
+              <button class="btn-ai" (click)="generateAiReport()">{{ 'results.ai.generate' | t }}</button>
+            </div>
+          } @else {
+            <div class="ai-prompt-content ai-prompt-no-key">
+              <div class="ai-prompt-label">{{ 'results.ai.title' | t }}</div>
+              <p class="ai-prompt-desc">
+                {{ 'results.ai.noKeyText' | t }}
+                <a routerLink="/settings" class="settings-link">{{ 'results.ai.noKeyLink' | t }}</a>
+                {{ 'results.ai.noKeyEnd' | t }}
+              </p>
+            </div>
+          }
+        </div>
+      }
+      @if (generatingAi()) {
+        <div class="ai-generating">
+          <div class="spinner-sm"></div>
+          <span>{{ 'results.ai.generating' | t }}</span>
+        </div>
+      }
+      @if (aiError()) {
+        <div class="ai-error">{{ aiError() }}</div>
+      }
+      @if (aiReport() && parsedReport().length > 0) {
+        <div class="ai-report-card">
+          <div class="ai-report-header">
+            <span class="ai-report-title">{{ 'results.ai.title' | t }}</span>
+            <span class="ai-model-badge">claude-opus-4-7</span>
+            <button class="btn-ai-sm" (click)="generateAiReport()">{{ 'results.ai.regenerate' | t }}</button>
+          </div>
+          <div class="ai-report-body">
+            @for (section of parsedReport(); track $index) {
+              <div class="report-section">
+                @if (section.title) {
+                  <h3 class="report-section-title">{{ section.title }}</h3>
+                }
+                <div class="report-section-body">
+                  @for (item of section.items; track $index) {
+                    @if (item.type === 'h4') {
+                      <h4 class="report-subsection-title">{{ item.text }}</h4>
+                    }
+                    @if (item.type === 'li') {
+                      <div class="report-bullet">{{ item.text }}</div>
+                    }
+                    @if (item.type === 'p') {
+                      <p class="report-para">{{ item.text }}</p>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Deterministic Analysis -->
     @if (results()!.analysis) {
       <div class="analysis-section">
         <div class="analysis-header">
           <div class="analysis-title-row">
-            <h2 class="analysis-title">Security Analysis</h2>
+            <h2 class="analysis-title">{{ 'results.analysis.title' | t }}</h2>
             <span [class]="'risk-badge ' + riskLevelClass(results()!.analysis!.riskLevel)">
               {{ results()!.analysis!.riskLevel }}
             </span>
@@ -63,7 +128,7 @@
         @if (results()!.analysis!.findings.length > 0) {
           <div class="findings-list">
             <h3 class="subsection-title">
-              Findings
+              {{ 'results.findings' | t }}
               <span class="findings-count">{{ results()!.analysis!.findings.length }}</span>
             </h3>
             @for (finding of results()!.analysis!.findings; track $index) {
@@ -87,7 +152,7 @@
                     <p class="finding-text">{{ finding.detail }}</p>
                     @if (hasCves(finding)) {
                       <div class="finding-cves">
-                        <span class="cves-label">Related CVEs:</span>
+                        <span class="cves-label">{{ 'results.ai.relatedCves' | t }}</span>
                         @for (cve of finding.relatedCves; track cve) {
                           <span class="cve-chip">{{ cve }}</span>
                         }
@@ -102,7 +167,7 @@
 
         @if (results()!.analysis!.recommendations.length > 0) {
           <div class="recommendations">
-            <h3 class="subsection-title">Recommendations</h3>
+            <h3 class="subsection-title">{{ 'results.recommendations' | t }}</h3>
             <ul class="rec-list">
               @for (rec of results()!.analysis!.recommendations; track $index) {
                 <li class="rec-item">{{ rec }}</li>
@@ -113,51 +178,8 @@
       </div>
     }
 
-    <div class="ai-report-section">
-      @if (!aiReport() && !generatingAi()) {
-        <div class="ai-report-prompt">
-          @if (hasApiKey) {
-            <div class="ai-prompt-content">
-              <div class="ai-prompt-label">AI Deep Analysis</div>
-              <p class="ai-prompt-desc">
-                Claude will analyze attack paths, chained vulnerabilities, and produce a contextual remediation roadmap.
-              </p>
-              <button class="btn-ai" (click)="generateAiReport()">Generate AI Report</button>
-            </div>
-          } @else {
-            <div class="ai-prompt-content ai-prompt-no-key">
-              <div class="ai-prompt-label">AI Deep Analysis</div>
-              <p class="ai-prompt-desc">
-                Configure your Anthropic API key in
-                <a routerLink="/settings" class="settings-link">Settings</a>
-                to enable AI-powered cross-host analysis.
-              </p>
-            </div>
-          }
-        </div>
-      }
-      @if (generatingAi()) {
-        <div class="ai-generating">
-          <div class="spinner-sm"></div>
-          <span>Claude is analyzing your scan data...</span>
-        </div>
-      }
-      @if (aiError()) {
-        <div class="ai-error">{{ aiError() }}</div>
-      }
-      @if (aiReport()) {
-        <div class="ai-report-card">
-          <div class="ai-report-header">
-            <span class="ai-report-title">AI Deep Analysis</span>
-            <span class="ai-model-badge">claude-opus-4-7</span>
-          </div>
-          <pre class="ai-report-body">{{ aiReport() }}</pre>
-        </div>
-      }
-    </div>
-
     @if (results()!.hosts.length === 0) {
-      <div class="empty-state">No hosts discovered in this scan.</div>
+      <div class="empty-state">{{ 'results.noHosts' | t }}</div>
     }
 
     <div class="hosts">
@@ -181,9 +203,9 @@
             </div>
 
             <div class="host-stats">
-              <span class="stat">{{ openPorts(host) }} open port(s)</span>
+              <span class="stat">{{ openPorts(host) }} {{ 'results.openPorts' | t }}</span>
               @if (totalCves(host) > 0) {
-                <span class="stat cve-count">{{ totalCves(host) }} CVE(s)</span>
+                <span class="stat cve-count">{{ totalCves(host) }} {{ 'results.cves' | t }}</span>
               }
             </div>
           </button>
@@ -194,13 +216,13 @@
                 <div class="host-meta-row">
                   @if (host.macAddress) {
                     <span class="meta-pair">
-                      <span class="meta-key">MAC</span>
+                      <span class="meta-key">{{ 'results.mac' | t }}</span>
                       <code>{{ host.macAddress }}</code>
                     </span>
                   }
                   @if (host.vendor) {
                     <span class="meta-pair">
-                      <span class="meta-key">Vendor</span>
+                      <span class="meta-key">{{ 'results.vendor' | t }}</span>
                       <span>{{ host.vendor }}</span>
                     </span>
                   }
@@ -208,16 +230,16 @@
               }
 
               @if (host.ports.length === 0) {
-                <div class="no-ports">No ports reported for this host.</div>
+                <div class="no-ports">{{ 'results.noPorts' | t }}</div>
               } @else {
                 <table class="ports-table">
                   <thead>
                     <tr>
-                      <th>Port</th>
-                      <th>State</th>
-                      <th>Service</th>
-                      <th>Version</th>
-                      <th>CVEs</th>
+                      <th>{{ 'results.col.port' | t }}</th>
+                      <th>{{ 'results.col.state' | t }}</th>
+                      <th>{{ 'results.col.service' | t }}</th>
+                      <th>{{ 'results.col.version' | t }}</th>
+                      <th>{{ 'results.col.cves' | t }}</th>
                     </tr>
                   </thead>
                   <tbody>

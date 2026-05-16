@@ -1,15 +1,15 @@
 <div class="page">
   <div class="page-header">
-    <h1 class="page-title">Scan History</h1>
+    <h1 class="page-title">{{ 'history.title' | t }}</h1>
     @if (data()) {
-      <span class="total-count">{{ data()!.totalElements }} scans</span>
+      <span class="total-count">{{ data()!.totalElements }} {{ 'history.scans' | t }}</span>
     }
   </div>
 
   @if (loading()) {
     <div class="loading-state">
       <div class="spinner"></div>
-      <span>Loading...</span>
+      <span>{{ 'history.loading' | t }}</span>
     </div>
   }
 
@@ -20,18 +20,18 @@
   @if (!loading() && !error() && data()) {
     @if (data()!.content.length === 0) {
       <div class="empty-state">
-        <p>No scans recorded yet.</p>
-        <a routerLink="/scan">Start your first scan</a>
+        <p>{{ 'history.empty' | t }}</p>
+        <a routerLink="/scan">{{ 'history.startFirst' | t }}</a>
       </div>
     } @else {
       <div class="table-wrapper">
         <table class="scan-table">
           <thead>
             <tr>
-              <th>Target</th>
-              <th>Status</th>
-              <th>Started</th>
-              <th>Duration</th>
+              <th>{{ 'history.col.target' | t }}</th>
+              <th>{{ 'history.col.status' | t }}</th>
+              <th>{{ 'history.col.started' | t }}</th>
+              <th>{{ 'history.col.duration' | t }}</th>
               <th></th>
             </tr>
           </thead>
@@ -79,7 +79,7 @@
             (click)="goToPage(currentPage() - 1)"
             [disabled]="currentPage() === 0"
           >
-            Previous
+            {{ 'history.prev' | t }}
           </button>
           @for (p of pages(); track p) {
             <button
@@ -94,7 +94,7 @@
             (click)="goToPage(currentPage() + 1)"
             [disabled]="currentPage() >= data()!.totalPages - 1"
           >
-            Next
+            {{ 'history.next' | t }}
           </button>
         </div>
       }
