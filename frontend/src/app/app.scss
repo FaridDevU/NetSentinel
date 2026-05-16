@@ -23,19 +23,12 @@
   margin-bottom: 4px;
 }
 
-.brand-icon {
+.brand-icon-img {
   width: 26px;
   height: 26px;
-  background: var(--accent);
-  color: #fff;
   border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .brand-name {

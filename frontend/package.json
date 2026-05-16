@@ -35,7 +35,8 @@
       }
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }]
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build-resources/icon.png"
     },
     "nsis": {
       "oneClick": false,
@@ -45,7 +46,6 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "NetSentinel",
-      "installerHeaderIcon": "build-resources/icon.ico",
       "include": "installer/setup.nsh"
     }
   },
