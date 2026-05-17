@@ -17,16 +17,16 @@ public class AnalysisService {
     private record ServiceRisk(String level, String reason) {}
 
     private static final Map<Integer, ServiceRisk> KNOWN_RISKS = Map.ofEntries(
-            Map.entry(21,    new ServiceRisk("MEDIUM", "FTP transmits credentials and data in cleartext. A passive network capture is sufficient to steal login credentials.")),
-            Map.entry(23,    new ServiceRisk("HIGH",   "Telnet is an unencrypted protocol with no integrity protection. All session data, including passwords, are transmitted in plaintext.")),
-            Map.entry(445,   new ServiceRisk("HIGH",   "SMB is a frequent vector for lateral movement and ransomware propagation. Exposure to untrusted networks significantly raises risk.")),
-            Map.entry(3389,  new ServiceRisk("HIGH",   "RDP is one of the most targeted services for brute-force attacks and exploitation of authentication bypasses.")),
-            Map.entry(5900,  new ServiceRisk("MEDIUM", "VNC can be configured without authentication or with weak credentials, allowing full graphical remote access.")),
-            Map.entry(6379,  new ServiceRisk("HIGH",   "Redis runs without authentication by default. An attacker with network access can read, write, or delete all cached data and execute server-side scripts.")),
-            Map.entry(27017, new ServiceRisk("HIGH",   "MongoDB is frequently deployed without authentication. A publicly reachable instance exposes all databases to read and write access.")),
-            Map.entry(11211, new ServiceRisk("MEDIUM", "Memcached has no authentication mechanism. Exposed instances can leak cached application data and be abused for amplification attacks.")),
-            Map.entry(2375,  new ServiceRisk("CRITICAL","Docker daemon TCP API exposed without TLS. Any client can spawn containers, mount host filesystems, and achieve full host compromise.")),
-            Map.entry(9200,  new ServiceRisk("MEDIUM", "Elasticsearch REST API exposed without authentication. All indexed data is readable and the cluster can be modified by anyone with network access."))
+            Map.entry(21,    new ServiceRisk("MEDIUM", "FTP transmite credenciales y datos en texto claro. Una captura pasiva de red es suficiente para robar las credenciales de acceso.")),
+            Map.entry(23,    new ServiceRisk("HIGH",   "Telnet es un protocolo sin cifrado ni proteccion de integridad. Todo el trafico de sesion, incluidas las contrasenas, se transmite en texto plano.")),
+            Map.entry(445,   new ServiceRisk("HIGH",   "SMB es un vector frecuente de movimiento lateral y propagacion de ransomware. La exposicion a redes no confiables aumenta significativamente el riesgo.")),
+            Map.entry(3389,  new ServiceRisk("HIGH",   "RDP es uno de los servicios mas atacados mediante fuerza bruta y explotacion de omisiones de autenticacion.")),
+            Map.entry(5900,  new ServiceRisk("MEDIUM", "VNC puede configurarse sin autenticacion o con credenciales debiles, permitiendo acceso grafico remoto completo.")),
+            Map.entry(6379,  new ServiceRisk("HIGH",   "Redis no tiene autenticacion por defecto. Un atacante con acceso a la red puede leer, escribir o eliminar todos los datos en cache y ejecutar scripts en el servidor.")),
+            Map.entry(27017, new ServiceRisk("HIGH",   "MongoDB se despliega frecuentemente sin autenticacion. Una instancia accesible en la red expone todas las bases de datos a lectura y escritura.")),
+            Map.entry(11211, new ServiceRisk("MEDIUM", "Memcached no tiene mecanismo de autenticacion. Las instancias expuestas pueden filtrar datos de la aplicacion en cache y ser explotadas en ataques de amplificacion.")),
+            Map.entry(2375,  new ServiceRisk("CRITICAL","API TCP del daemon de Docker expuesta sin TLS. Cualquier cliente puede crear contenedores, montar el sistema de archivos del host y comprometer el sistema por completo.")),
+            Map.entry(9200,  new ServiceRisk("MEDIUM", "API REST de Elasticsearch expuesta sin autenticacion. Todos los datos indexados son accesibles y el cluster puede ser modificado por cualquier persona con acceso a la red."))
     );
 
     private static final Set<Integer> DATABASE_PORTS = Set.of(1433, 1521, 3306, 5432, 5984);
@@ -88,7 +88,7 @@ public class AnalysisService {
             } else if (DATABASE_PORTS.contains(port.getPortNumber())) {
                 findings.add(new Finding(
                         "MEDIUM",
-                        "Database service directly reachable on port " + port.getPortNumber(),
+                        "Base de datos accesible directamente en el puerto " + port.getPortNumber(),
                         buildDbExposureDetail(host.getIp(), port),
                         host.getIp(),
                         port.getPortNumber(),
@@ -114,17 +114,23 @@ public class AnalysisService {
         int count = cves.size();
         CveEntry top = cves.get(0);
 
-        String title = String.format("%s%s — %d %s CVE%s on port %d",
-                capitalize(service), version, count, severity.toLowerCase(), count > 1 ? "s" : "", port.getPortNumber());
+        String severityEs = switch (severity) {
+            case "CRITICAL" -> "critica";
+            case "HIGH"     -> "alta";
+            case "MEDIUM"   -> "media";
+            default         -> "baja";
+        };
+        String title = String.format("%s%s — %d vulnerabilidad%s de severidad %s (puerto %d)",
+                capitalize(service), version, count, count > 1 ? "es" : "", severityEs, port.getPortNumber());
 
-        String desc = top.getDescription() != null ? top.getDescription() : "No description available.";
+        String desc = top.getDescription() != null ? top.getDescription() : "Sin descripcion disponible.";
         String excerpt = desc.length() > 200 ? desc.substring(0, 200) + "..." : desc;
 
         String detail = String.format(
-                "Host %s exposes %s%s on port %d/%s. %d %s-severity vulnerabilit%s identified: %s. " +
-                "Top finding (%s, CVSS %.1f): %s",
+                "El dispositivo %s expone %s%s en el puerto %d/%s. Se identificaron %d vulnerabilidad%s de severidad %s: %s. " +
+                "La mas grave (%s, CVSS %.1f): %s",
                 ip, service, version, port.getPortNumber(), port.getProtocol(),
-                count, severity.toLowerCase(), count > 1 ? "ies" : "y",
+                count, count > 1 ? "es" : "", severityEs,
                 cves.stream().map(CveEntry::getCveId).collect(Collectors.joining(", ")),
                 top.getCveId(), top.getCvssScore(), excerpt
         );
@@ -135,37 +141,37 @@ public class AnalysisService {
     }
 
     private String buildServiceTitle(NetworkPort port) {
-        String name = port.getService() != null ? capitalize(port.getService()) : "Service";
-        return name + " exposed on port " + port.getPortNumber() + " — " + getServiceRiskSuffix(port.getPortNumber());
+        String name = port.getService() != null ? capitalize(port.getService()) : "Servicio";
+        return name + " expuesto en el puerto " + port.getPortNumber() + " — " + getServiceRiskSuffix(port.getPortNumber());
     }
 
     private String getServiceRiskSuffix(int port) {
         return switch (port) {
-            case 21 -> "cleartext protocol";
-            case 23 -> "unencrypted remote access";
-            case 445 -> "lateral movement vector";
-            case 3389 -> "remote desktop brute-force target";
-            case 5900 -> "unauthenticated graphical access";
-            case 6379 -> "unauthenticated data store";
-            case 27017 -> "unauthenticated database";
-            case 11211 -> "unauthenticated cache";
-            case 2375 -> "unauthenticated container API";
-            case 9200 -> "unauthenticated search index";
-            default -> "known risk";
+            case 21 -> "protocolo en texto claro";
+            case 23 -> "acceso remoto sin cifrado";
+            case 445 -> "vector de movimiento lateral";
+            case 3389 -> "objetivo de ataques de fuerza bruta";
+            case 5900 -> "acceso grafico sin autenticacion";
+            case 6379 -> "base de datos en cache sin autenticacion";
+            case 27017 -> "base de datos sin autenticacion";
+            case 11211 -> "cache sin autenticacion";
+            case 2375 -> "API de contenedores sin autenticacion";
+            case 9200 -> "indice de busqueda sin autenticacion";
+            default -> "riesgo conocido";
         };
     }
 
     private String buildDbExposureDetail(String ip, NetworkPort port) {
-        String service = port.getService() != null ? port.getService() : "database";
+        String service = port.getService() != null ? port.getService() : "base de datos";
         return String.format(
-                "Port %d on %s exposes a %s instance directly to the network. " +
-                "Database services should not be directly reachable from untrusted networks. " +
-                "Network segmentation and firewall rules should restrict access to authorized clients only.",
+                "El puerto %d en %s expone una instancia de %s directamente en la red. " +
+                "Los servicios de base de datos no deben ser accesibles desde redes no confiables. " +
+                "Se recomienda usar reglas de firewall para restringir el acceso solo a los sistemas autorizados.",
                 port.getPortNumber(), ip, service);
     }
 
     private String buildHostSummary(NetworkHost host, List<NetworkPort> openPorts, int totalCves) {
-        if (openPorts.isEmpty()) return "No open ports detected on this host.";
+        if (openPorts.isEmpty()) return "No se detectaron puertos abiertos en este dispositivo.";
 
         String services = openPorts.stream()
                 .map(p -> p.getService() != null ? p.getService() : String.valueOf(p.getPortNumber()))
@@ -173,13 +179,14 @@ public class AnalysisService {
                 .collect(Collectors.joining(", "));
 
         String cveInfo = totalCves > 0
-                ? String.format(" %d exploitable vulnerabilit%s detected.", totalCves, totalCves > 1 ? "ies" : "y")
+                ? String.format(" Se detectaron %d vulnerabilidad%s conocida%s.", totalCves, totalCves > 1 ? "es" : "", totalCves > 1 ? "s" : "")
                 : "";
 
-        String osInfo = host.getOs() != null ? " Running " + host.getOs() + "." : "";
+        String osInfo = host.getOs() != null ? " Sistema operativo: " + host.getOs() + "." : "";
 
-        return String.format("%d open port%s exposing: %s.%s%s",
-                openPorts.size(), openPorts.size() > 1 ? "s" : "", services, osInfo, cveInfo);
+        return String.format("%d puerto%s abierto%s: %s.%s%s",
+                openPorts.size(), openPorts.size() > 1 ? "s" : "", openPorts.size() > 1 ? "s" : "",
+                services, osInfo, cveInfo);
     }
 
     private String calculateHostRisk(List<NetworkPort> openPorts, List<Finding> findings, String ip) {
@@ -213,22 +220,22 @@ public class AnalysisService {
         long high = findings.stream().filter(f -> "HIGH".equals(f.severity())).count();
         long medium = findings.stream().filter(f -> "MEDIUM".equals(f.severity())).count();
 
-        String hostWord = hosts.size() == 1 ? "host" : "hosts";
-        String portWord = totalOpen == 1 ? "open port" : "open ports";
+        String hostWord = hosts.size() == 1 ? "dispositivo" : "dispositivos";
+        String portWord = totalOpen == 1 ? "puerto abierto" : "puertos abiertos";
 
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("Scan of %s discovered %d %s with %d %s. ",
+        sb.append(String.format("El analisis de %s descubrio %d %s con %d %s. ",
                 target, hosts.size(), hostWord, totalOpen, portWord));
 
         if (critical > 0 || high > 0) {
-            sb.append(String.format("%s found: %s",
-                    findings.size() == 1 ? "1 security issue" : findings.size() + " security issues",
+            sb.append(String.format("Se encontraron %s: %s",
+                    findings.size() == 1 ? "1 problema de seguridad" : findings.size() + " problemas de seguridad",
                     buildSeveritySummary(critical, high, medium)));
         } else if (medium > 0) {
-            sb.append(String.format("%d medium-severity issue%s identified requiring attention.",
+            sb.append(String.format("Se identificaron %d problema%s de severidad media que requieren atencion.",
                     medium, medium > 1 ? "s" : ""));
         } else {
-            sb.append("No significant vulnerabilities detected.");
+            sb.append("No se detectaron vulnerabilidades significativas.");
         }
 
         sb.append(" ").append(riskSentence(riskLevel));
@@ -237,19 +244,19 @@ public class AnalysisService {
 
     private String buildSeveritySummary(long critical, long high, long medium) {
         List<String> parts = new ArrayList<>();
-        if (critical > 0) parts.add(critical + " critical");
-        if (high > 0) parts.add(high + " high");
-        if (medium > 0) parts.add(medium + " medium");
+        if (critical > 0) parts.add(critical + " critico" + (critical > 1 ? "s" : ""));
+        if (high > 0) parts.add(high + " alto" + (high > 1 ? "s" : ""));
+        if (medium > 0) parts.add(medium + " medio" + (medium > 1 ? "s" : ""));
         return String.join(", ", parts) + ".";
     }
 
     private String riskSentence(String level) {
         return switch (level) {
-            case "CRITICAL" -> "Immediate remediation is required — active exploitation risk is high.";
-            case "HIGH"     -> "Urgent corrective action is recommended before next exposure window.";
-            case "MEDIUM"   -> "Scheduled patching and access restriction are advised.";
-            case "LOW"      -> "Exposure is limited. Maintain regular monitoring and update cycles.";
-            default         -> "No immediate action required.";
+            case "CRITICAL" -> "Se requiere accion inmediata — el riesgo de explotacion activa es alto.";
+            case "HIGH"     -> "Se recomienda tomar medidas urgentes para reducir la exposicion.";
+            case "MEDIUM"   -> "Se aconseja aplicar los parches pendientes y restringir el acceso a los servicios expuestos.";
+            case "LOW"      -> "La exposicion es limitada. Mantener monitoreo regular y ciclos de actualizacion.";
+            default         -> "No se requiere ninguna accion inmediata.";
         };
     }
 
@@ -261,29 +268,30 @@ public class AnalysisService {
             int port = f.port();
 
             if (!f.relatedCves().isEmpty()) {
-                String rec = "Update " + capitalize(f.service()) + " to the latest stable version to address " +
-                        f.relatedCves().size() + " known CVE" + (f.relatedCves().size() > 1 ? "s" : "") + " on port " + port + ".";
+                String rec = "Actualiza " + capitalize(f.service()) + " a la ultima version estable para corregir " +
+                        f.relatedCves().size() + " vulnerabilidad" + (f.relatedCves().size() > 1 ? "es" : "") +
+                        " conocida" + (f.relatedCves().size() > 1 ? "s" : "") + " en el puerto " + port + ".";
                 seen.add(rec);
             }
 
-            if (port == 23) seen.add("Replace Telnet (port 23) with SSH for all remote access.");
-            if (port == 21) seen.add("Replace FTP (port 21) with SFTP or FTPS to protect credentials in transit.");
-            if (port == 3389) seen.add("Restrict RDP (port 3389) access via network-level firewall rules and enable Network Level Authentication.");
-            if (port == 445) seen.add("Block SMB (port 445) at the perimeter. Enable SMB signing to prevent relay attacks.");
-            if (port == 6379) seen.add("Enable Redis authentication (requirepass) and bind Redis to localhost or a private interface.");
-            if (port == 27017) seen.add("Enable MongoDB authentication and restrict access to the database port by IP.");
-            if (port == 2375) seen.add("Immediately disable the Docker TCP API or enforce TLS client authentication.");
+            if (port == 23) seen.add("Reemplaza Telnet (puerto 23) por SSH para todos los accesos remotos.");
+            if (port == 21) seen.add("Reemplaza FTP (puerto 21) por SFTP o FTPS para proteger las credenciales en transito.");
+            if (port == 3389) seen.add("Restringe el acceso a RDP (puerto 3389) mediante reglas de firewall y habilita la Autenticacion de Nivel de Red (NLA).");
+            if (port == 445) seen.add("Bloquea SMB (puerto 445) en el perimetro. Habilita la firma SMB para prevenir ataques de retransmision.");
+            if (port == 6379) seen.add("Habilita autenticacion en Redis (requirepass) y vincula Redis a localhost o a una interfaz privada.");
+            if (port == 27017) seen.add("Habilita autenticacion en MongoDB y restringe el acceso al puerto de la base de datos por IP.");
+            if (port == 2375) seen.add("Desactiva inmediatamente la API TCP de Docker o aplica autenticacion TLS de cliente.");
             if (DATABASE_PORTS.contains(port) && f.relatedCves().isEmpty()) {
-                seen.add("Restrict database port " + port + " (" + capitalize(f.service()) + ") to authorized application servers via firewall rules.");
+                seen.add("Restringe el puerto de base de datos " + port + " (" + capitalize(f.service()) + ") solo a los servidores de aplicaciones autorizados mediante reglas de firewall.");
             }
         }
 
         long hasVulnerabilities = findings.stream().filter(f -> !f.relatedCves().isEmpty()).count();
         if (hasVulnerabilities > 0) {
-            seen.add("Establish a regular patching schedule — prioritize services with known CVEs.");
+            seen.add("Establece un calendario regular de actualizaciones — prioriza los servicios con vulnerabilidades conocidas.");
         }
         if (findings.size() > 2) {
-            seen.add("Apply network segmentation to limit lateral movement between exposed services.");
+            seen.add("Aplica segmentacion de red para limitar el movimiento lateral entre los servicios expuestos.");
         }
 
         return new ArrayList<>(seen);
