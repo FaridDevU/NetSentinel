@@ -92,12 +92,21 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'history.loading': 'Cargando...',
     'history.empty': 'No hay analisis registrados.',
     'history.startFirst': 'Realiza tu primer analisis',
-    'history.col.target': 'Red',
+    'history.col.target': 'Red analizada',
     'history.col.status': 'Estado',
     'history.col.started': 'Fecha',
     'history.col.duration': 'Duracion',
     'history.prev': 'Anterior',
     'history.next': 'Siguiente',
+    'history.delete': 'Eliminar',
+    'history.error': 'No se pudo cargar el historial. Asegurate de que el servidor este activo.',
+
+    // Status labels
+    'status.pending': 'Iniciando',
+    'status.running': 'Analizando',
+    'status.completed': 'Completado',
+    'status.failed': 'Error',
+    'status.cancelled': 'Cancelado',
 
     // Settings page
     'settings.title': 'Ajustes',
@@ -223,12 +232,21 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'history.loading': 'Loading...',
     'history.empty': 'No analyses recorded yet.',
     'history.startFirst': 'Run your first analysis',
-    'history.col.target': 'Network',
+    'history.col.target': 'Network scanned',
     'history.col.status': 'Status',
     'history.col.started': 'Date',
     'history.col.duration': 'Duration',
     'history.prev': 'Previous',
     'history.next': 'Next',
+    'history.delete': 'Delete',
+    'history.error': 'Could not load history. Make sure the server is running.',
+
+    // Status labels
+    'status.pending': 'Starting',
+    'status.running': 'Analyzing',
+    'status.completed': 'Completed',
+    'status.failed': 'Failed',
+    'status.cancelled': 'Cancelled',
 
     // Settings page
     'settings.title': 'Settings',
