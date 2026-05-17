@@ -14,7 +14,7 @@
   }
 
   @if (error()) {
-    <div class="error-block">{{ error() }}</div>
+    <div class="error-block">{{ error()! | t }}</div>
   }
 
   @if (!loading() && !error() && data()) {
@@ -39,24 +39,30 @@
             @for (scan of data()!.content; track scan.id) {
               <tr class="scan-row" (click)="openResults(scan.id)">
                 <td class="target-cell">
-                  <code>{{ scan.target }}</code>
+                  <div class="target-row">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="7" width="20" height="15" rx="2"/>
+                      <polyline points="17 2 12 7 7 2"/>
+                    </svg>
+                    <span class="target-text">{{ scan.target }}</span>
+                  </div>
                 </td>
                 <td>
                   <span [class]="'badge ' + statusClass(scan.status)">
                     @if (isActive(scan.status)) {
                       <span class="badge-dot"></span>
                     }
-                    {{ scan.status }}
+                    {{ statusKey(scan.status) | t }}
                   </span>
                 </td>
-                <td class="time-cell">{{ scan.startedAt | date:'MMM d, HH:mm' }}</td>
+                <td class="time-cell">{{ scan.startedAt | date:'d MMM yyyy, HH:mm' }}</td>
                 <td class="time-cell">{{ durationSeconds(scan) }}</td>
                 <td class="action-cell">
                   <button
                     class="delete-btn"
                     (click)="deleteScan($event, scan.id)"
                     [disabled]="deletingId() === scan.id"
-                    title="Delete"
+                    [title]="'history.delete' | t"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="3 6 5 6 21 6"/>

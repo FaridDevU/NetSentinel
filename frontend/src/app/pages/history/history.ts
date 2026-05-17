@@ -45,7 +45,7 @@ export class HistoryPage implements OnInit, OnDestroy {
         this.scheduleRefreshIfNeeded();
       },
       error: () => {
-        this.error.set('Failed to load history. Is the backend running?');
+        this.error.set('history.error');
         this.loading.set(false);
       },
     });
@@ -94,6 +94,10 @@ export class HistoryPage implements OnInit, OnDestroy {
 
   statusClass(status: string): string {
     return status.toLowerCase();
+  }
+
+  statusKey(status: string): string {
+    return `status.${status.toLowerCase()}`;
   }
 
   isActive(status: string): boolean {
