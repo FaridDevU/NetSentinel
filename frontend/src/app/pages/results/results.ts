@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Subscription, timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
@@ -9,7 +9,7 @@ import { AnalysisFinding, HostDto, ScanResultsResponse, WebFindingDto } from '..
 
 @Component({
   selector: 'app-results',
-  imports: [DatePipe, RouterLink, TranslatePipe],
+  imports: [DatePipe, TranslatePipe],
   templateUrl: './results.html',
   styleUrl: './results.scss',
 })
