@@ -5,6 +5,20 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'nav.newScan': 'Escanear',
     'nav.history': 'Historial',
     'offline.banner': 'Servicio no disponible — asegurate de que el backend este corriendo en el puerto 8080',
+    'offline.setup': 'Configurar sistema',
+
+    // Setup page
+    'setup.checking': 'Comprobando requisitos del sistema...',
+    'setup.missing.title': 'Faltan componentes del sistema',
+    'setup.missing.body': 'NetSentinel necesita estos componentes para funcionar. Se instalan automaticamente en Kali WSL2 — no se sube nada a internet.',
+    'setup.installing.title': 'Instalando componentes...',
+    'setup.installing.body': 'Se ha abierto una ventana de instalacion. El sistema continuara automaticamente cuando termine.',
+    'setup.ready.title': 'Todo listo',
+    'setup.ready.body': 'Todos los componentes estan instalados y funcionando.',
+    'setup.btn.install': 'Instalar ahora',
+    'setup.btn.later': 'Continuar sin instalar',
+    'setup.btn.verify': 'Verificar estado ahora',
+    'setup.btn.continue': 'Ir al escaner',
 
     // Scan page
     'scan.title': 'Analizar mi red',
@@ -105,6 +119,20 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'nav.newScan': 'Scan',
     'nav.history': 'History',
     'offline.banner': 'Service unavailable — make sure the backend is running on port 8080',
+    'offline.setup': 'Configure system',
+
+    // Setup page
+    'setup.checking': 'Checking system requirements...',
+    'setup.missing.title': 'Missing system components',
+    'setup.missing.body': 'NetSentinel needs these components to work. They are installed automatically in Kali WSL2 — nothing is uploaded to the internet.',
+    'setup.installing.title': 'Installing components...',
+    'setup.installing.body': 'An installation window has opened. The system will continue automatically when finished.',
+    'setup.ready.title': 'All set',
+    'setup.ready.body': 'All components are installed and running.',
+    'setup.btn.install': 'Install now',
+    'setup.btn.later': 'Continue without installing',
+    'setup.btn.verify': 'Check status now',
+    'setup.btn.continue': 'Go to scanner',
 
     // Scan page
     'scan.title': 'Analyze my network',

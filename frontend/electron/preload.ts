@@ -1,3 +1,9 @@
-import { contextBridge } from "electron";
+import { contextBridge, ipcRenderer } from "electron";
 
-contextBridge.exposeInMainWorld("electron", {});
+contextBridge.exposeInMainWorld("electron", {
+  checkDepsQuick: () => ipcRenderer.invoke('deps:quick'),
+  checkDeps: () => ipcRenderer.invoke('deps:check'),
+  getSetupStatus: () => ipcRenderer.invoke('deps:status'),
+  runSetup: () => ipcRenderer.invoke('deps:install'),
+  startBackend: () => ipcRenderer.invoke('backend:start'),
+});
