@@ -28,7 +28,7 @@ public class ScanController {
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final java.util.regex.Pattern VALID_TARGET =
-            java.util.regex.Pattern.compile("^[a-zA-Z0-9.\\-:/\\[\\]]{1,100}$");
+            java.util.regex.Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9.\\-:/\\[\\]]{0,99}$");
 
     private final ScanService scanService;
 
