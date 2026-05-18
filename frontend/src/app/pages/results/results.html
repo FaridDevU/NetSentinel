@@ -130,61 +130,32 @@
       </div>
     }
 
-    <!-- Informe IA -->
-    <div class="section-card ai-section">
-      @if (!aiReport() && !generatingAi()) {
-        @if (hasApiKey) {
-          <div class="ai-prompt-row">
-            <div class="ai-prompt-text">
-              <div class="section-label">{{ 'results.ai.title' | t }}</div>
-              <p class="ai-desc">{{ 'results.ai.desc' | t }}</p>
-            </div>
-            <button class="btn-ai" (click)="generateAiReport()">{{ 'results.ai.generate' | t }}</button>
-          </div>
-        } @else {
-          <div class="ai-nokey">
-            <div class="section-label">{{ 'results.ai.title' | t }}</div>
-            <p class="ai-desc">
-              {{ 'results.ai.noKeyText' | t }}
-              <a routerLink="/settings" class="settings-link">{{ 'results.ai.noKeyLink' | t }}</a>
-              {{ 'results.ai.noKeyEnd' | t }}
-            </p>
-          </div>
-        }
-      }
-      @if (generatingAi()) {
-        <div class="ai-generating">
-          <div class="spinner-sm"></div>
-          <span>{{ 'results.ai.generating' | t }}</span>
+    <!-- Hallazgos web (gobuster + nikto) -->
+    @if (hasWebFindings(results()!.hosts)) {
+      <div class="section-card">
+        <div class="section-label">{{ 'results.web.title' | t }}
+          <span class="count-badge">{{ allWebFindings(results()!.hosts).length }}</span>
         </div>
-      }
-      @if (aiError()) {
-        <div class="ai-error">{{ aiError() }}</div>
-      }
-      @if (aiReport() && parsedReport().length > 0) {
-        <div class="ai-report-header">
-          <span class="section-label">{{ 'results.ai.title' | t }}</span>
-          <span class="ai-model-badge">claude-opus-4-7</span>
-          <button class="btn-ai-sm" (click)="generateAiReport()">{{ 'results.ai.regenerate' | t }}</button>
-        </div>
-        <div class="ai-report-body">
-          @for (section of parsedReport(); track $index) {
-            <div class="report-section">
-              @if (section.title) {
-                <h3 class="report-section-title">{{ section.title }}</h3>
-              }
-              <div class="report-section-body">
-                @for (item of section.items; track $index) {
-                  @if (item.type === 'h4') { <h4 class="report-subsection-title">{{ item.text }}</h4> }
-                  @if (item.type === 'li') { <div class="report-bullet">{{ item.text }}</div> }
-                  @if (item.type === 'p')  { <p class="report-para">{{ item.text }}</p> }
+        <div class="findings-list">
+          @for (item of allWebFindings(results()!.hosts); track $index) {
+            <div class="finding-card">
+              <div class="web-finding-row">
+                <span [class]="'sev-dot ' + webFindingClass(item.finding.severity)"></span>
+                <span class="web-finding-tool">{{ webFindingToolLabel(item.finding.tool) }}</span>
+                <span class="web-finding-desc">{{ item.finding.description }}</span>
+                @if (item.finding.statusCode !== null) {
+                  <span class="web-status-code">{{ item.finding.statusCode }}</span>
                 }
+              </div>
+              <div class="web-finding-url">
+                <code>{{ item.finding.url }}</code>
+                <span class="web-finding-host">{{ item.host }}</span>
               </div>
             </div>
           }
         </div>
-      }
-    </div>
+      </div>
+    }
 
     <!-- Toggle detalles tecnicos -->
     <div class="technical-toggle-row">
@@ -241,6 +212,9 @@
                   <span class="stat">{{ openPorts(host) }} {{ 'results.openPorts' | t }}</span>
                   @if (totalCves(host) > 0) {
                     <span class="stat cve-count">{{ totalCves(host) }} {{ 'results.cves' | t }}</span>
+                  }
+                  @if (totalWebFindings(host) > 0) {
+                    <span class="stat web-count">{{ totalWebFindings(host) }} {{ 'results.webFindings' | t }}</span>
                   }
                 </div>
               </button>

@@ -47,10 +47,6 @@ export class ScanService {
     );
   }
 
-  generateAiReport(scanId: string, apiKey: string): Observable<{ report: string }> {
-    return this.http.post<{ report: string }>(`${this.base}/scan/${scanId}/ai-report`, { apiKey });
-  }
-
   getLocalNetworks(): Observable<LocalNetworkInterface[]> {
     return this.http.get<LocalNetworkInterface[]>(`${this.base}/network/local`);
   }

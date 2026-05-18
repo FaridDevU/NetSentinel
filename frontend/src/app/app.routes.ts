@@ -14,12 +14,4 @@ export const routes: Routes = [
     path: 'results/:id',
     loadComponent: () => import('./pages/results/results').then((m) => m.ResultsPage),
   },
-  {
-    path: 'reports',
-    loadComponent: () => import('./pages/reports/reports').then((m) => m.ReportsPage),
-  },
-  {
-    path: 'settings',
-    loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsPage),
-  },
 ];

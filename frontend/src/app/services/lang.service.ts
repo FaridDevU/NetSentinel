@@ -4,8 +4,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
   es: {
     'nav.newScan': 'Escanear',
     'nav.history': 'Historial',
-    'nav.settings': 'Ajustes',
-    'nav.reports': 'Informes',
     'offline.banner': 'Servicio no disponible — asegurate de que el backend este corriendo en el puerto 8080',
 
     // Scan page
@@ -28,6 +26,7 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'scan.step.found': 'Dispositivos encontrados — revisando seguridad...',
     'scan.step.checking': 'Consultando base de datos de vulnerabilidades...',
     'scan.step.analyzing': 'Preparando tu diagnostico de seguridad...',
+    'scan.step.web': 'Analizando servicios web...',
     'scan.showDetails': 'Ver progreso tecnico',
     'scan.hideDetails': 'Ocultar detalles',
 
@@ -76,15 +75,8 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.vendor': 'Fabricante',
     'results.openPorts': 'servicio(s) activo(s)',
     'results.cves': 'vulnerabilidad(es)',
-    'results.ai.title': 'Informe detallado con IA',
-    'results.ai.desc': 'Claude analiza los datos del escaneo y genera un informe personalizado con rutas de ataque y pasos concretos de remediacion.',
-    'results.ai.generate': 'Generar informe con IA',
-    'results.ai.noKeyText': 'Configura tu clave API de Anthropic en',
-    'results.ai.noKeyLink': 'Ajustes',
-    'results.ai.noKeyEnd': 'para habilitar el analisis con IA.',
-    'results.ai.generating': 'Generando informe...',
-    'results.ai.relatedCves': 'Vulnerabilidades relacionadas:',
-    'results.ai.regenerate': 'Regenerar',
+    'results.webFindings': 'hallazgo(s) web',
+    'results.web.title': 'Hallazgos web',
 
     // History page
     'history.title': 'Historial de analisis',
@@ -108,44 +100,10 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'status.failed': 'Error',
     'status.cancelled': 'Cancelado',
 
-    // Settings page
-    'settings.title': 'Ajustes',
-    'settings.subtitle': 'Configuracion de integraciones opcionales',
-    'settings.lang.title': 'Idioma',
-    'settings.lang.desc': 'Cambia el idioma de la interfaz entre espanol e ingles.',
-    'settings.ai.title': 'Analisis con Inteligencia Artificial',
-    'settings.ai.configured': 'Configurada',
-    'settings.ai.notConfigured': 'No configurada',
-    'settings.ai.desc': 'Con tu clave API de Anthropic, NetSentinel puede generar un informe personalizado que explica cada problema en lenguaje simple y te indica exactamente que hacer. Tu clave se guarda solo en este dispositivo.',
-    'settings.ai.keyLabel': 'Clave API de Anthropic',
-    'settings.ai.keyHint': 'Obtenla en console.anthropic.com',
-    'settings.ai.saved': 'Guardado',
-    'settings.ai.clear': 'Borrar clave',
-    'settings.ai.save': 'Guardar',
-    'settings.how.title': 'Como funciona',
-    'settings.how.step1.strong': 'Haz clic en "Analizar mi red"',
-    'settings.how.step1.text': '— NetSentinel encuentra todos los dispositivos conectados y detecta sus servicios automaticamente',
-    'settings.how.step2.strong': 'Analisis automatico',
-    'settings.how.step2.text': '— el motor integrado calcula el riesgo y genera recomendaciones sin costo adicional',
-    'settings.how.step3.strong': 'Informe con IA (opcional)',
-    'settings.how.step3.text': '— con tu clave API, Claude genera un informe mas detallado con explicaciones en lenguaje simple',
-
-    // Reports page
-    'reports.title': 'Informes guardados',
-    'reports.subtitle': 'Informes generados por IA a partir de tus analisis. Puedes exportarlos en PDF.',
-    'reports.empty': 'No hay informes guardados. Realiza un analisis y genera un informe con IA.',
-    'reports.view': 'Ver',
-    'reports.close': 'Cerrar',
-    'reports.pdf': 'Exportar PDF',
-    'reports.delete': 'Eliminar',
-    'reports.risk': 'Nivel de riesgo',
-    'reports.noRisk': 'N/A',
   },
   en: {
     'nav.newScan': 'Scan',
     'nav.history': 'History',
-    'nav.settings': 'Settings',
-    'nav.reports': 'Reports',
     'offline.banner': 'Service unavailable — make sure the backend is running on port 8080',
 
     // Scan page
@@ -168,6 +126,7 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'scan.step.found': 'Devices found — checking security...',
     'scan.step.checking': 'Checking vulnerability database...',
     'scan.step.analyzing': 'Preparing your security report...',
+    'scan.step.web': 'Analyzing web services...',
     'scan.showDetails': 'Show technical details',
     'scan.hideDetails': 'Hide details',
 
@@ -216,15 +175,8 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.vendor': 'Vendor',
     'results.openPorts': 'active service(s)',
     'results.cves': 'vulnerability(ies)',
-    'results.ai.title': 'Detailed AI report',
-    'results.ai.desc': 'Claude analyzes your scan data and generates a personalized report with attack paths and concrete remediation steps.',
-    'results.ai.generate': 'Generate AI report',
-    'results.ai.noKeyText': 'Configure your Anthropic API key in',
-    'results.ai.noKeyLink': 'Settings',
-    'results.ai.noKeyEnd': 'to enable AI-powered analysis.',
-    'results.ai.generating': 'Generating report...',
-    'results.ai.relatedCves': 'Related vulnerabilities:',
-    'results.ai.regenerate': 'Regenerate',
+    'results.webFindings': 'web finding(s)',
+    'results.web.title': 'Web findings',
 
     // History page
     'history.title': 'Analysis history',
@@ -248,38 +200,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'status.failed': 'Failed',
     'status.cancelled': 'Cancelled',
 
-    // Settings page
-    'settings.title': 'Settings',
-    'settings.subtitle': 'Configure optional integrations',
-    'settings.lang.title': 'Language',
-    'settings.lang.desc': 'Switch the interface between English and Spanish.',
-    'settings.ai.title': 'AI Analysis',
-    'settings.ai.configured': 'Configured',
-    'settings.ai.notConfigured': 'Not configured',
-    'settings.ai.desc': 'With your Anthropic API key, NetSentinel can generate a personalized report explaining each issue in plain language and telling you exactly what to do. Your key is stored only on this device.',
-    'settings.ai.keyLabel': 'Anthropic API Key',
-    'settings.ai.keyHint': 'Get it at console.anthropic.com',
-    'settings.ai.saved': 'Saved',
-    'settings.ai.clear': 'Clear key',
-    'settings.ai.save': 'Save',
-    'settings.how.title': 'How it works',
-    'settings.how.step1.strong': 'Click "Analyze my network"',
-    'settings.how.step1.text': '— NetSentinel finds all connected devices and detects their services automatically',
-    'settings.how.step2.strong': 'Automatic analysis',
-    'settings.how.step2.text': '— the built-in engine calculates risk and generates recommendations at no extra cost',
-    'settings.how.step3.strong': 'AI report (optional)',
-    'settings.how.step3.text': '— with your API key, Claude generates a more detailed report with plain-language explanations',
-
-    // Reports page
-    'reports.title': 'Saved reports',
-    'reports.subtitle': 'AI-generated reports from your analyses. Export any report as PDF.',
-    'reports.empty': 'No reports saved yet. Run an analysis and generate an AI report.',
-    'reports.view': 'View',
-    'reports.close': 'Close',
-    'reports.pdf': 'Export PDF',
-    'reports.delete': 'Delete',
-    'reports.risk': 'Risk level',
-    'reports.noRisk': 'N/A',
   },
 };
 

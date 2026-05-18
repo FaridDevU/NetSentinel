@@ -34,4 +34,7 @@ public class NetworkHost {
 
     @OneToMany(mappedBy = "host", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NetworkPort> ports = new ArrayList<>();
+
+    @OneToMany(mappedBy = "host", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WebFinding> webFindings = new ArrayList<>();
 }

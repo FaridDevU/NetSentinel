@@ -47,7 +47,7 @@ if (-not $kaliInstalled) {
 
 # -- Install tools in Kali --
 Write-Output "Installing tools in Kali Linux..."
-wsl -d kali-linux -- bash -c "sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq nmap curl wget openjdk-21-jre-headless 2>/dev/null"
+wsl -d kali-linux -- bash -c "sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq nmap curl wget openjdk-21-jre-headless gobuster nikto dirb 2>/dev/null"
 
 # -- Copy and start sandbox --
 $wslPath = $InstallDir -replace "\\", "/"

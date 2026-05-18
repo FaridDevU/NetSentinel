@@ -11,6 +11,7 @@ import com.netsentinel.entity.CveEntry;
 import com.netsentinel.entity.NetworkHost;
 import com.netsentinel.entity.NetworkPort;
 import com.netsentinel.entity.ScanJob;
+import com.netsentinel.entity.WebFinding;
 import com.netsentinel.enums.ScanStatus;
 import com.netsentinel.repository.ScanJobRepository;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -35,6 +37,8 @@ public class ScanService {
 
     private static final Logger log = LoggerFactory.getLogger(ScanService.class);
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final Set<Integer> WEB_PORTS = Set.of(80, 443, 8080, 8443, 3000, 8000, 8081, 8888);
+
     private final Map<UUID, List<String>> scanLogs = new ConcurrentHashMap<>();
 
     private final ScanJobRepository scanJobRepository;
@@ -43,6 +47,8 @@ public class ScanService {
     private final NvdService nvdService;
     private final ScanJobUpdater scanJobUpdater;
     private final AnalysisService analysisService;
+    private final GobusterParserService gobusterParserService;
+    private final NiktoParserService niktoParserService;
     private final ObjectMapper objectMapper;
 
     public ScanService(ScanJobRepository scanJobRepository,
@@ -51,6 +57,8 @@ public class ScanService {
                        NvdService nvdService,
                        ScanJobUpdater scanJobUpdater,
                        AnalysisService analysisService,
+                       GobusterParserService gobusterParserService,
+                       NiktoParserService niktoParserService,
                        ObjectMapper objectMapper) {
         this.scanJobRepository = scanJobRepository;
         this.sandboxService = sandboxService;
@@ -58,6 +66,8 @@ public class ScanService {
         this.nvdService = nvdService;
         this.scanJobUpdater = scanJobUpdater;
         this.analysisService = analysisService;
+        this.gobusterParserService = gobusterParserService;
+        this.niktoParserService = niktoParserService;
         this.objectMapper = objectMapper;
     }
 
@@ -79,28 +89,27 @@ public class ScanService {
     private void runScan(UUID scanJobId) {
         ScanJob job = scanJobUpdater.markRunning(scanJobId);
         log.info("Starting scan {} for target {}", scanJobId, job.getTarget());
-        addLog(scanJobId, "Scan started — target: " + job.getTarget());
+        addLog(scanJobId, "Analisis iniciado — objetivo: " + job.getTarget());
 
         String flags = String.join(" ", job.getParameters());
-        addLog(scanJobId, "Running nmap " + (flags.isBlank() ? "(default)" : flags) + " ...");
+        addLog(scanJobId, "Ejecutando nmap " + (flags.isBlank() ? "(por defecto)" : flags) + " ...");
 
         SandboxService.SandboxResult result = sandboxService.runNmap(job.getTarget(), job.getParameters());
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
-            log.info("Scan {} cancelled during sandbox execution", scanJobId);
-            addLog(scanJobId, "Scan cancelled.");
+            addLog(scanJobId, "Analisis cancelado.");
             return;
         }
 
         if (!result.success()) {
             scanJobUpdater.markFailed(scanJobId, result.error());
             log.error("Scan {} failed: {}", scanJobId, result.error());
-            addLog(scanJobId, "nmap error: " + result.error());
+            addLog(scanJobId, "Error en nmap: " + result.error());
             return;
         }
 
         List<NetworkHost> hosts = nmapParserService.parse(result.output(), job);
-        addLog(scanJobId, "nmap finished — " + hosts.size() + " host(s) found");
+        addLog(scanJobId, "nmap finalizado — " + hosts.size() + " dispositivo(s) encontrado(s)");
 
         long openPorts = hosts.stream()
                 .flatMap(h -> h.getPorts().stream())
@@ -108,7 +117,7 @@ public class ScanService {
                 .count();
 
         if (openPorts > 0) {
-            addLog(scanJobId, "Checking CVE database for " + openPorts + " open service(s)...");
+            addLog(scanJobId, "Consultando base de datos de vulnerabilidades para " + openPorts + " servicio(s)...");
         }
 
         for (NetworkHost host : hosts) {
@@ -125,15 +134,21 @@ public class ScanService {
         }
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
-            log.info("Scan {} cancelled before save", scanJobId);
-            addLog(scanJobId, "Scan cancelled.");
+            addLog(scanJobId, "Analisis cancelado.");
+            return;
+        }
+
+        runWebScans(scanJobId, hosts);
+
+        if (scanJobUpdater.isCancelled(scanJobId)) {
+            addLog(scanJobId, "Analisis cancelado.");
             return;
         }
 
         scanJobUpdater.saveResults(scanJobId, result.output(), hosts);
         log.info("Scan {} completed with {} hosts", scanJobId, hosts.size());
 
-        addLog(scanJobId, "Running security risk analysis...");
+        addLog(scanJobId, "Calculando nivel de riesgo...");
         try {
             AnalysisReport report = analysisService.analyze(job.getTarget(), hosts);
             String reportJson = objectMapper.writeValueAsString(report);
@@ -143,10 +158,54 @@ public class ScanService {
             int totalCves = hosts.stream()
                     .flatMap(h -> h.getPorts().stream())
                     .mapToInt(p -> p.getCves().size()).sum();
-            addLog(scanJobId, "Done — " + hosts.size() + " host(s), " + totalCves + " CVE(s) found. Risk: " + report.riskLevel());
+            int totalWebFindings = hosts.stream()
+                    .mapToInt(h -> h.getWebFindings().size()).sum();
+            addLog(scanJobId, "Listo — " + hosts.size() + " dispositivo(s), " + totalCves
+                    + " CVE(s), " + totalWebFindings + " hallazgo(s) web. Riesgo: " + report.riskLevel());
         } catch (JsonProcessingException e) {
             log.warn("Failed to serialize analysis for scan {}: {}", scanJobId, e.getMessage());
-            addLog(scanJobId, "Done — " + hosts.size() + " host(s) found.");
+            addLog(scanJobId, "Listo — " + hosts.size() + " dispositivo(s) encontrado(s).");
+        }
+    }
+
+    private void runWebScans(UUID scanJobId, List<NetworkHost> hosts) {
+        for (NetworkHost host : hosts) {
+            List<NetworkPort> openWebPorts = host.getPorts().stream()
+                    .filter(p -> "open".equals(p.getState()) && WEB_PORTS.contains(p.getPortNumber()))
+                    .toList();
+
+            if (openWebPorts.isEmpty()) continue;
+
+            for (NetworkPort port : openWebPorts) {
+                if (scanJobUpdater.isCancelled(scanJobId)) return;
+
+                String scheme = (port.getPortNumber() == 443 || port.getPortNumber() == 8443) ? "https" : "http";
+                String url = scheme + "://" + host.getIp() + ":" + port.getPortNumber();
+
+                addLog(scanJobId, "Analizando servicios web en " + host.getIp() + ":" + port.getPortNumber() + " ...");
+
+                SandboxService.SandboxResult gobusterResult = sandboxService.runGobuster(url);
+                if (gobusterResult.success() && gobusterResult.output() != null) {
+                    List<WebFinding> gf = gobusterParserService.parse(gobusterResult.output(), host, url);
+                    host.getWebFindings().addAll(gf);
+                    if (!gf.isEmpty()) {
+                        addLog(scanJobId, "  gobuster: " + gf.size() + " ruta(s) en " + url);
+                    }
+                } else {
+                    log.debug("Gobuster skipped or failed for {}: {}", url, gobusterResult.error());
+                }
+
+                SandboxService.SandboxResult niktoResult = sandboxService.runNikto(url);
+                if (niktoResult.success() && niktoResult.output() != null) {
+                    List<WebFinding> nf = niktoParserService.parse(niktoResult.output(), host, url);
+                    host.getWebFindings().addAll(nf);
+                    if (!nf.isEmpty()) {
+                        addLog(scanJobId, "  nikto: " + nf.size() + " hallazgo(s) en " + url);
+                    }
+                } else {
+                    log.debug("Nikto skipped or failed for {}: {}", url, niktoResult.error());
+                }
+            }
         }
     }
 
@@ -246,6 +305,15 @@ public class ScanService {
                                                         cve.getNvdUrl()
                                                 ))
                                                 .toList()
+                                ))
+                                .toList(),
+                        host.getWebFindings().stream()
+                                .map(wf -> new ScanResultsResponse.WebFindingDto(
+                                        wf.getTool(),
+                                        wf.getUrl(),
+                                        wf.getStatusCode(),
+                                        wf.getDescription(),
+                                        wf.getSeverity()
                                 ))
                                 .toList()
                 ))
