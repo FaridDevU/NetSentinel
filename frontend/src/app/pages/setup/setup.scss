@@ -68,8 +68,6 @@
   width: 100%;
 }
 
-// Dep list
-
 .dep-list {
   width: 100%;
   display: flex;
@@ -120,8 +118,6 @@
   &.fail { color: var(--danger); }
 }
 
-// Check circle (ready state)
-
 .check-circle {
   width: 52px;
   height: 52px;
@@ -133,8 +129,6 @@
   align-items: center;
   justify-content: center;
 }
-
-// Spinner
 
 .spinner-lg {
   width: 32px;
@@ -148,8 +142,6 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-// Actions
 
 .setup-actions {
   display: flex;

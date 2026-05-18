@@ -22,8 +22,6 @@ class AnalysisServiceTest {
         service = new AnalysisService();
     }
 
-    // ---- helpers -------------------------------------------------------
-
     private NetworkHost host(String ip, NetworkPort... ports) {
         NetworkHost h = new NetworkHost();
         h.setIp(ip);
@@ -57,8 +55,6 @@ class AnalysisServiceTest {
         return p;
     }
 
-    // ---- tests: riesgo global ------------------------------------------
-
     @Test
     void sinHosts_retornaRiesgoInfo() {
         AnalysisReport report = service.analyze("192.168.1.0/24", List.of());
@@ -87,8 +83,6 @@ class AnalysisServiceTest {
 
         assertThat(report.riskLevel()).isEqualTo("CRITICAL");
     }
-
-    // ---- tests: findings por servicio ----------------------------------
 
     @Test
     void ftpAbierto_findingMedioEnEspanol() {
@@ -152,8 +146,6 @@ class AnalysisServiceTest {
         assertThat(f.detail()).contains("firewall");
     }
 
-    // ---- tests: findings por CVE ---------------------------------------
-
     @Test
     void cveAlto_generaFindingConSeveridadAlta() {
         NetworkPort p = portWithCve(443, "https", "CVE-2023-1234", 7.5);
@@ -203,13 +195,11 @@ class AnalysisServiceTest {
         assertThat(f.detail()).contains("CVSS");
     }
 
-    // ---- tests: orden de findings --------------------------------------
-
     @Test
     void multiplesFindingsOrdenadosPorSeveridadDescendente() {
         NetworkHost h = host("192.168.1.1",
-                port(21, "open", "ftp"),    // MEDIUM
-                port(2375, "open", "docker") // CRITICAL
+                port(21, "open", "ftp"),
+                port(2375, "open", "docker")
         );
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
@@ -217,8 +207,6 @@ class AnalysisServiceTest {
         assertThat(report.findings()).hasSizeGreaterThanOrEqualTo(2);
         assertThat(report.findings().get(0).severity()).isEqualTo("CRITICAL");
     }
-
-    // ---- tests: recomendaciones ----------------------------------------
 
     @Test
     void ftpAbierto_recomendacionMencionaReemplazar() {
@@ -264,8 +252,6 @@ class AnalysisServiceTest {
         assertThat(report.recommendations())
                 .anyMatch(r -> r.contains("segmentacion"));
     }
-
-    // ---- tests: resumen en espanol -------------------------------------
 
     @Test
     void resumenContieneTextoEnEspanol() {
