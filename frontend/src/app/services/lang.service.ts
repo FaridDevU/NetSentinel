@@ -71,6 +71,8 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'severity.info': 'Info',
 
     'results.back': 'Volver',
+    'results.live.scanning': 'Analizando tu red...',
+    'results.live.starting': 'Iniciando analisis...',
     'results.loading': 'Cargando resultados...',
     'results.noHosts': 'No se encontraron dispositivos en este escaneo.',
     'results.noPorts': 'Sin puertos reportados.',
@@ -176,6 +178,8 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'severity.info': 'Info',
 
     'results.back': 'Back',
+    'results.live.scanning': 'Analyzing your network...',
+    'results.live.starting': 'Starting analysis...',
     'results.loading': 'Loading results...',
     'results.noHosts': 'No devices discovered in this scan.',
     'results.noPorts': 'No ports reported.',
