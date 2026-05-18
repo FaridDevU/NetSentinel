@@ -6,6 +6,7 @@ import com.netsentinel.dto.AnalysisReport.HostSummary;
 import com.netsentinel.entity.CveEntry;
 import com.netsentinel.entity.NetworkHost;
 import com.netsentinel.entity.NetworkPort;
+import com.netsentinel.entity.WebFinding;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -98,6 +99,8 @@ public class AnalysisService {
             }
         }
 
+        analyzeWebFindings(host, findings);
+
         String hostRisk = calculateHostRisk(openPorts, findings, host.getIp());
         summaries.add(new HostSummary(
                 host.getIp(),
@@ -106,6 +109,37 @@ public class AnalysisService {
                 totalCves,
                 buildHostSummary(host, openPorts, totalCves)
         ));
+    }
+
+    private void analyzeWebFindings(NetworkHost host, List<Finding> findings) {
+        List<WebFinding> highFindings = host.getWebFindings().stream()
+                .filter(wf -> "HIGH".equals(wf.getSeverity()))
+                .toList();
+        List<WebFinding> mediumFindings = host.getWebFindings().stream()
+                .filter(wf -> "MEDIUM".equals(wf.getSeverity()))
+                .toList();
+
+        if (!highFindings.isEmpty()) {
+            String paths = highFindings.stream()
+                    .map(WebFinding::getUrl)
+                    .distinct().limit(3)
+                    .collect(Collectors.joining(", "));
+            findings.add(new Finding(
+                    "HIGH",
+                    "Contenido web critico expuesto en " + host.getIp(),
+                    "Se encontraron " + highFindings.size() + " ruta(s) web de alto riesgo accesibles: " + paths +
+                    ". Estas rutas pueden exponer paneles de administracion, archivos de configuracion o funciones criticas del sistema.",
+                    host.getIp(), 80, "http", List.of()
+            ));
+        } else if (!mediumFindings.isEmpty()) {
+            findings.add(new Finding(
+                    "MEDIUM",
+                    "Contenido web sensible detectado en " + host.getIp(),
+                    "Se encontraron " + mediumFindings.size() + " ruta(s) web con contenido potencialmente sensible " +
+                    "detectadas por gobuster y nikto. Revisa cada hallazgo y restringe el acceso publico.",
+                    host.getIp(), 80, "http", List.of()
+            ));
+        }
     }
 
     private Finding buildCveFinding(String ip, NetworkPort port, String severity, List<CveEntry> cves) {
@@ -292,6 +326,14 @@ public class AnalysisService {
         }
         if (findings.size() > 2) {
             seen.add("Aplica segmentacion de red para limitar el movimiento lateral entre los servicios expuestos.");
+        }
+
+        long highWebCount = hosts.stream()
+                .flatMap(h -> h.getWebFindings().stream())
+                .filter(wf -> "HIGH".equals(wf.getSeverity()))
+                .count();
+        if (highWebCount > 0) {
+            seen.add("Revisa y protege las rutas web de alto riesgo detectadas — restringe el acceso con autenticacion o reglas de firewall.");
         }
 
         return new ArrayList<>(seen);

@@ -1,15 +1,11 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Subscription, timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
-import { SettingsPage } from '../settings/settings';
-import { AnalysisFinding, HostDto, ScanResultsResponse } from '../../models/scan.models';
-
-export interface ReportItem { type: 'p' | 'li' | 'h4'; text: string; }
-export interface ReportSection { title: string; items: ReportItem[]; }
+import { AnalysisFinding, HostDto, ScanResultsResponse, WebFindingDto } from '../../models/scan.models';
 
 @Component({
   selector: 'app-results',
@@ -25,16 +21,9 @@ export class ResultsPage implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   expandedHosts = signal<Set<string>>(new Set());
   expandedPorts = signal<Set<string>>(new Set());
+  expandedFindings = signal<Set<number>>(new Set());
+  showTechnical = signal(false);
   scanLogs = signal<string[]>([]);
-
-  aiReport = signal<string | null>(null);
-  generatingAi = signal(false);
-  aiError = signal<string | null>(null);
-
-  parsedReport = computed<ReportSection[]>(() => {
-    const raw = this.aiReport();
-    return raw ? this.parseReport(raw) : [];
-  });
 
   private scanId = '';
   private logSub?: Subscription;
@@ -99,12 +88,10 @@ export class ResultsPage implements OnInit, OnDestroy {
         next: (status) => {
           if (status.status !== 'PENDING' && status.status !== 'RUNNING') {
             this.logSub?.unsubscribe();
-            // Fetch final logs once
             this.scanService.getScanLogs(id).subscribe({
               next: (r) => this.scanLogs.set(r.lines),
               error: () => {},
             });
-            // Reload full results
             this.scanService.getResults(id).subscribe({
               next: (res) => {
                 this.results.set(res);
@@ -120,67 +107,6 @@ export class ResultsPage implements OnInit, OnDestroy {
       });
   }
 
-  get hasApiKey(): boolean {
-    return (SettingsPage.getStoredKey() ?? '').length > 0;
-  }
-
-  generateAiReport(): void {
-    const apiKey = SettingsPage.getStoredKey();
-    if (!apiKey) return;
-
-    this.generatingAi.set(true);
-    this.aiError.set(null);
-    this.aiReport.set(null);
-
-    this.scanService.generateAiReport(this.scanId, apiKey).subscribe({
-      next: (res) => {
-        this.aiReport.set(res.report);
-        this.generatingAi.set(false);
-        const r = this.results();
-        if (r) {
-          localStorage.setItem(`ns_report_${this.scanId}`, JSON.stringify({
-            scanId: this.scanId,
-            target: r.target,
-            date: r.completedAt ?? r.startedAt,
-            report: res.report,
-            riskLevel: r.analysis?.riskLevel,
-          }));
-        }
-      },
-      error: (err) => {
-        this.generatingAi.set(false);
-        this.aiError.set(err?.error?.error ?? 'AI analysis failed');
-      },
-    });
-  }
-
-  private parseReport(text: string): ReportSection[] {
-    const sections: ReportSection[] = [];
-    let current: ReportSection | null = null;
-    for (const line of text.split('\n')) {
-      const t = line.trim();
-      if (t.startsWith('## ')) {
-        if (current) sections.push(current);
-        current = { title: this.stripMd(t.slice(3)), items: [] };
-      } else if (t.startsWith('### ')) {
-        current?.items.push({ type: 'h4', text: this.stripMd(t.slice(4)) });
-      } else if (/^[-*] /.test(t)) {
-        current?.items.push({ type: 'li', text: this.stripMd(t.slice(2)) });
-      } else if (/^\d+\. /.test(t)) {
-        current?.items.push({ type: 'li', text: this.stripMd(t.replace(/^\d+\. /, '')) });
-      } else if (t && t !== '---' && t !== '***' && !t.startsWith('# ')) {
-        if (!current) current = { title: '', items: [] };
-        current.items.push({ type: 'p', text: this.stripMd(t) });
-      }
-    }
-    if (current) sections.push(current);
-    return sections;
-  }
-
-  private stripMd(text: string): string {
-    return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/`(.*?)`/g, '$1');
-  }
-
   toggleHost(id: string): void {
     const set = new Set(this.expandedHosts());
     if (set.has(id)) { set.delete(id); } else { set.add(id); }
@@ -193,24 +119,22 @@ export class ResultsPage implements OnInit, OnDestroy {
     this.expandedPorts.set(set);
   }
 
-  isHostExpanded(id: string): boolean { return this.expandedHosts().has(id); }
-  isPortExpanded(id: string): boolean { return this.expandedPorts().has(id); }
-  goBack(): void { void this.router.navigate(['/history']); }
-  openPorts(host: HostDto): number { return host.ports.filter((p) => p.state === 'open').length; }
-  totalCves(host: HostDto): number { return host.ports.reduce((sum, p) => sum + p.cves.length, 0); }
-  findingClass(severity: string): string { return severity.toLowerCase(); }
-  riskLevelClass(level: string): string { return level.toLowerCase(); }
-
-  expandedFindings = signal<Set<number>>(new Set());
-  showTechnical = signal(false);
-
   toggleFinding(index: number): void {
     const set = new Set(this.expandedFindings());
     if (set.has(index)) { set.delete(index); } else { set.add(index); }
     this.expandedFindings.set(set);
   }
+
+  isHostExpanded(id: string): boolean { return this.expandedHosts().has(id); }
+  isPortExpanded(id: string): boolean { return this.expandedPorts().has(id); }
   isFindingExpanded(index: number): boolean { return this.expandedFindings().has(index); }
-  hasCves(finding: AnalysisFinding): boolean { return finding.relatedCves.length > 0; }
+
+  goBack(): void { void this.router.navigate(['/history']); }
+  openPorts(host: HostDto): number { return host.ports.filter((p) => p.state === 'open').length; }
+  totalCves(host: HostDto): number { return host.ports.reduce((sum, p) => sum + p.cves.length, 0); }
+  totalWebFindings(host: HostDto): number { return host.webFindings?.length ?? 0; }
+  findingClass(severity: string): string { return severity.toLowerCase(); }
+  webFindingClass(severity: string): string { return severity.toLowerCase(); }
 
   cvssClass(score: number | null): string {
     if (score === null) return 'none';
@@ -219,8 +143,6 @@ export class ResultsPage implements OnInit, OnDestroy {
     if (score >= 4.0) return 'medium';
     return 'low';
   }
-
-  statusClass(status: string): string { return status.toLowerCase(); }
 
   durationSeconds(): string {
     const r = this.results();
@@ -246,13 +168,8 @@ export class ResultsPage implements OnInit, OnDestroy {
     return `results.risk.${level}.sub`;
   }
 
-  devicesCount(): number {
-    return this.results()?.hosts.length ?? 0;
-  }
-
-  problemsCount(): number {
-    return this.results()?.analysis?.findings.length ?? 0;
-  }
+  devicesCount(): number { return this.results()?.hosts.length ?? 0; }
+  problemsCount(): number { return this.results()?.analysis?.findings.length ?? 0; }
 
   deviceLabel(host: { ip: string; hostname: string | null; vendor: string | null }): string {
     if (host.hostname) return host.hostname;
@@ -260,7 +177,17 @@ export class ResultsPage implements OnInit, OnDestroy {
     return host.ip;
   }
 
-  friendlySeverityKey(severity: string): string {
-    return `severity.${severity.toLowerCase()}`;
+  webFindingToolLabel(tool: string): string {
+    return tool === 'gobuster' ? 'Gobuster' : 'Nikto';
+  }
+
+  hasWebFindings(hosts: HostDto[]): boolean {
+    return hosts.some(h => (h.webFindings?.length ?? 0) > 0);
+  }
+
+  allWebFindings(hosts: HostDto[]): { host: string; finding: WebFindingDto }[] {
+    return hosts.flatMap(h =>
+      (h.webFindings ?? []).map(wf => ({ host: h.ip, finding: wf }))
+    );
   }
 }

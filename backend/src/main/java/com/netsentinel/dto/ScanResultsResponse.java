@@ -22,7 +22,8 @@ public record ScanResultsResponse(
             String os,
             String macAddress,
             String vendor,
-            List<PortDto> ports
+            List<PortDto> ports,
+            List<WebFindingDto> webFindings
     ) {}
 
     public record PortDto(
@@ -41,5 +42,13 @@ public record ScanResultsResponse(
             Double cvssScore,
             String cvssVector,
             String nvdUrl
+    ) {}
+
+    public record WebFindingDto(
+            String tool,
+            String url,
+            Integer statusCode,
+            String description,
+            String severity
     ) {}
 }

@@ -27,6 +27,14 @@ export interface PortDto {
   cves: CveDto[];
 }
 
+export interface WebFindingDto {
+  tool: string;
+  url: string;
+  statusCode: number | null;
+  description: string;
+  severity: string;
+}
+
 export interface HostDto {
   id: string;
   ip: string;
@@ -35,6 +43,7 @@ export interface HostDto {
   macAddress: string | null;
   vendor: string | null;
   ports: PortDto[];
+  webFindings: WebFindingDto[];
 }
 
 export interface AnalysisFinding {

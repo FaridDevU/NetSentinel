@@ -1,6 +1,5 @@
 package com.netsentinel.controller;
 
-import com.netsentinel.dto.AiReportRequest;
 import com.netsentinel.dto.ErrorResponse;
 import com.netsentinel.dto.PagedResponse;
 import com.netsentinel.dto.ScanRequest;
@@ -8,7 +7,6 @@ import com.netsentinel.dto.ScanResultsResponse;
 import com.netsentinel.dto.ScanStatusResponse;
 import com.netsentinel.entity.ScanJob;
 import com.netsentinel.enums.ScanStatus;
-import com.netsentinel.service.ClaudeService;
 import com.netsentinel.service.ScanService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +19,6 @@ import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -34,11 +31,9 @@ public class ScanController {
             java.util.regex.Pattern.compile("^[a-zA-Z0-9.\\-:/\\[\\]]{1,100}$");
 
     private final ScanService scanService;
-    private final ClaudeService claudeService;
 
-    public ScanController(ScanService scanService, ClaudeService claudeService) {
+    public ScanController(ScanService scanService) {
         this.scanService = scanService;
-        this.claudeService = claudeService;
     }
 
     @PostMapping("/scan/start")
@@ -76,29 +71,6 @@ public class ScanController {
         return scanService.getResults(id)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(404).body(new ErrorResponse("Scan not found: " + id)));
-    }
-
-    @PostMapping("/scan/{id}/ai-report")
-    public ResponseEntity<?> generateAiReport(@PathVariable UUID id, @RequestBody AiReportRequest request) {
-        if (request.apiKey() == null || request.apiKey().isBlank()) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("API key is required"));
-        }
-
-        Optional<ScanResultsResponse> results = scanService.getResults(id);
-        if (results.isEmpty()) {
-            return ResponseEntity.status(404).body(new ErrorResponse("Scan not found: " + id));
-        }
-        if (results.get().status() != ScanStatus.COMPLETED) {
-            return ResponseEntity.badRequest().body(
-                    new ErrorResponse("Scan must be COMPLETED to generate AI report"));
-        }
-
-        try {
-            String report = claudeService.analyzeSecurityData(request.apiKey(), results.get());
-            return ResponseEntity.ok(Map.of("report", report));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(new ErrorResponse(e.getMessage()));
-        }
     }
 
     @PostMapping("/scan/{id}/cancel")
@@ -153,7 +125,7 @@ public class ScanController {
                 for (InterfaceAddress addr : ni.getInterfaceAddresses()) {
                     if (!(addr.getAddress() instanceof Inet4Address)) continue;
                     String ip = addr.getAddress().getHostAddress();
-                    if (ip.startsWith("169.254")) continue; // link-local, skip
+                    if (ip.startsWith("169.254")) continue;
 
                     int prefixLen = addr.getNetworkPrefixLength();
                     String subnet = calculateSubnet(ip, prefixLen);

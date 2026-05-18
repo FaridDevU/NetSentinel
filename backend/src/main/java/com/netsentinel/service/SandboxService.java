@@ -41,12 +41,21 @@ public class SandboxService {
         return execute("nmap", target, args, 600);
     }
 
-    public SandboxResult runGobuster(String target, List<String> parameters) {
-        return execute("gobuster", target, parameters, 300);
+    public SandboxResult runGobuster(String url) {
+        List<String> args = List.of(
+                "dir",
+                "-w", "/usr/share/wordlists/dirb/common.txt",
+                "-t", "50",
+                "--timeout", "5s",
+                "-q",
+                "-u"
+        );
+        return execute("gobuster", url, args, 120);
     }
 
-    public SandboxResult runNikto(String target, List<String> parameters) {
-        return execute("nikto", target, parameters, 300);
+    public SandboxResult runNikto(String url) {
+        List<String> args = List.of("-maxtime", "60", "-h");
+        return execute("nikto", url, args, 90);
     }
 
     private SandboxResult execute(String tool, String target, List<String> args, int timeoutSecs) {
