@@ -10,19 +10,20 @@ let backendProcess: ChildProcess | null = null;
 function startBackend(): Promise<void> {
   if (process.env['NODE_ENV'] === 'development') return Promise.resolve();
 
-  const jarPath = join(process.resourcesPath, 'backend.jar');
-  if (!existsSync(jarPath)) return Promise.resolve();
-
-  backendProcess = spawn('java', ['-jar', jarPath], {
+  backendProcess = spawn('wsl', [
+    '-d', 'kali-linux',
+    '--',
+    'bash', '-c', 'bash "$HOME/.netsentinel/start.sh"'
+  ], {
     stdio: 'ignore',
     detached: false,
   });
 
   backendProcess.on('error', () => {
-    // java not found or failed to start — app continues, user sees offline banner
+    // WSL2 no disponible o Kali no instalado — el banner offline lo indica al usuario
   });
 
-  return waitForBackend(30);
+  return waitForBackend(45);
 }
 
 function waitForBackend(retries: number): Promise<void> {
