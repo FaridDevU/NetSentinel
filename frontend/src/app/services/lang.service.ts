@@ -7,7 +7,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'offline.banner': 'Servicio no disponible — asegurate de que el backend este corriendo en el puerto 8080',
     'offline.setup': 'Configurar sistema',
 
-    // Setup page
     'setup.checking': 'Comprobando requisitos del sistema...',
     'setup.missing.title': 'Faltan componentes del sistema',
     'setup.missing.body': 'NetSentinel necesita estos componentes para funcionar. Se instalan automaticamente en Kali WSL2 — no se sube nada a internet.',
@@ -20,7 +19,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'setup.btn.verify': 'Verificar estado ahora',
     'setup.btn.continue': 'Ir al escaner',
 
-    // Scan page
     'scan.title': 'Analizar mi red',
     'scan.subtitle': 'Detecta problemas de seguridad en todos los dispositivos conectados a tu red',
     'scan.network.detecting': 'Detectando tu red...',
@@ -44,7 +42,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'scan.showDetails': 'Ver progreso tecnico',
     'scan.hideDetails': 'Ocultar detalles',
 
-    // Results page — hero
     'results.risk.critical': 'Tu red tiene problemas criticos',
     'results.risk.critical.sub': 'Requiere atencion inmediata para proteger tu negocio',
     'results.risk.high': 'Tu red tiene riesgos importantes',
@@ -58,7 +55,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.hero.devices': 'dispositivo(s) analizado(s)',
     'results.hero.issues': 'problema(s) encontrado(s)',
 
-    // Results page — sections
     'results.whattodo': 'Que debes hacer',
     'results.problems': 'Problemas encontrados',
     'results.noproblems': 'No se encontraron problemas de seguridad en tu red.',
@@ -68,14 +64,12 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.scanDate': 'Analisis del',
     'results.duration': 'Duracion',
 
-    // Results page — severity labels
     'severity.critical': 'Critico',
     'severity.high': 'Alto',
     'severity.medium': 'Medio',
     'severity.low': 'Bajo',
     'severity.info': 'Info',
 
-    // Results page — existing
     'results.back': 'Volver',
     'results.loading': 'Cargando resultados...',
     'results.noHosts': 'No se encontraron dispositivos en este escaneo.',
@@ -92,7 +86,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.webFindings': 'hallazgo(s) web',
     'results.web.title': 'Hallazgos web',
 
-    // History page
     'history.title': 'Historial de analisis',
     'history.scans': 'analisis',
     'history.loading': 'Cargando...',
@@ -107,13 +100,11 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'history.delete': 'Eliminar',
     'history.error': 'No se pudo cargar el historial. Asegurate de que el servidor este activo.',
 
-    // Status labels
     'status.pending': 'Iniciando',
     'status.running': 'Analizando',
     'status.completed': 'Completado',
     'status.failed': 'Error',
     'status.cancelled': 'Cancelado',
-
   },
   en: {
     'nav.newScan': 'Scan',
@@ -121,7 +112,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'offline.banner': 'Service unavailable — make sure the backend is running on port 8080',
     'offline.setup': 'Configure system',
 
-    // Setup page
     'setup.checking': 'Checking system requirements...',
     'setup.missing.title': 'Missing system components',
     'setup.missing.body': 'NetSentinel needs these components to work. They are installed automatically in Kali WSL2 — nothing is uploaded to the internet.',
@@ -134,7 +124,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'setup.btn.verify': 'Check status now',
     'setup.btn.continue': 'Go to scanner',
 
-    // Scan page
     'scan.title': 'Analyze my network',
     'scan.subtitle': 'Detect security issues in all devices connected to your network',
     'scan.network.detecting': 'Detecting your network...',
@@ -158,7 +147,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'scan.showDetails': 'Show technical details',
     'scan.hideDetails': 'Hide details',
 
-    // Results page — hero
     'results.risk.critical': 'Your network has critical issues',
     'results.risk.critical.sub': 'Requires immediate attention to protect your business',
     'results.risk.high': 'Your network has significant risks',
@@ -172,7 +160,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.hero.devices': 'device(s) analyzed',
     'results.hero.issues': 'issue(s) found',
 
-    // Results page — sections
     'results.whattodo': 'What to do',
     'results.problems': 'Issues found',
     'results.noproblems': 'No security issues found on your network.',
@@ -182,14 +169,12 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.scanDate': 'Scan from',
     'results.duration': 'Duration',
 
-    // Results page — severity labels
     'severity.critical': 'Critical',
     'severity.high': 'High',
     'severity.medium': 'Medium',
     'severity.low': 'Low',
     'severity.info': 'Info',
 
-    // Results page — existing
     'results.back': 'Back',
     'results.loading': 'Loading results...',
     'results.noHosts': 'No devices discovered in this scan.',
@@ -206,7 +191,6 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'results.webFindings': 'web finding(s)',
     'results.web.title': 'Web findings',
 
-    // History page
     'history.title': 'Analysis history',
     'history.scans': 'analyses',
     'history.loading': 'Loading...',
@@ -221,13 +205,11 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'history.delete': 'Delete',
     'history.error': 'Could not load history. Make sure the server is running.',
 
-    // Status labels
     'status.pending': 'Starting',
     'status.running': 'Analyzing',
     'status.completed': 'Completed',
     'status.failed': 'Failed',
     'status.cancelled': 'Cancelled',
-
   },
 };
 

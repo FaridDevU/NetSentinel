@@ -18,8 +18,6 @@ class NmapParserServiceTest {
         parser = new NmapParserService();
     }
 
-    // ---- helpers -------------------------------------------------------
-
     private static final String XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 
     private String minimal(String hostXml) {
@@ -44,8 +42,6 @@ class NmapParserServiceTest {
                "</port></ports>";
     }
 
-    // ---- tests: entradas invalidas -------------------------------------
-
     @Test
     void xmlNulo_retornaListaVacia() {
         assertThat(parser.parse(null, null)).isEmpty();
@@ -61,8 +57,6 @@ class NmapParserServiceTest {
     void xmlMalformado_retornaListaVacia() {
         assertThat(parser.parse("<esto no es xml valido<<<", null)).isEmpty();
     }
-
-    // ---- tests: estado del host ----------------------------------------
 
     @Test
     void hostDown_noSeIncluye() {
@@ -87,8 +81,6 @@ class NmapParserServiceTest {
 
         assertThat(parser.parse(xml, null)).isEmpty();
     }
-
-    // ---- tests: host basico --------------------------------------------
 
     @Test
     void hostSimple_parseaIpYCantidadDePuertos() {
@@ -144,8 +136,6 @@ class NmapParserServiceTest {
         NetworkHost host = parser.parse(xml, null).get(0);
         assertThat(host.getOs()).isEqualTo("Linux 5.4");
     }
-
-    // ---- tests: puertos ------------------------------------------------
 
     @Test
     void puertoCerrado_seIncluye() {
@@ -218,8 +208,6 @@ class NmapParserServiceTest {
         assertThat(port.getVersion()).isNull();
     }
 
-    // ---- tests: multiples hosts ----------------------------------------
-
     @Test
     void dosHostsUp_parsea2Hosts() {
         String xml = minimal(
@@ -246,8 +234,6 @@ class NmapParserServiceTest {
         assertThat(parser.parse(xml, null)).hasSize(1);
         assertThat(parser.parse(xml, null).get(0).getIp()).isEqualTo("192.168.1.1");
     }
-
-    // ---- test clave: DOCTYPE de nmap no rompe el parser ----------------
 
     @Test
     void xmlConDoctypeDeNmap_parseaSinError() {

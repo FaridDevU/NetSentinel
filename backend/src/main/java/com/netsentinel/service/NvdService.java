@@ -28,7 +28,7 @@ public class NvdService {
 
     private static final Logger log = LoggerFactory.getLogger(NvdService.class);
     private static final int MAX_RESULTS = 20;
-    private static final long REQUEST_INTERVAL_MS = 650;
+    private static final long REQUEST_INTERVAL_MS = 6200;
 
     @Value("${nvd.api.base-url}")
     private String baseUrl;
@@ -116,8 +116,14 @@ public class NvdService {
             );
 
             if (response.statusCode() == 429) {
-                log.warn("NVD API rate limit hit (429). Consider setting nvd.api.key in config.");
-                return List.of();
+                log.warn("NVD API rate limit hit (429), reintentando en 30s...");
+                try {
+                    Thread.sleep(30_000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return List.of();
+                }
+                response = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
             }
 
             if (response.statusCode() != 200) {
