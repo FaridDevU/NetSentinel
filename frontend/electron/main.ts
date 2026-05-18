@@ -2,7 +2,7 @@ import { app, BrowserWindow, nativeImage, Menu, ipcMain } from 'electron';
 import { join } from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
-import * as http from 'http';
+import { networkInterfaces } from 'os';
 
 let mainWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
@@ -14,7 +14,11 @@ interface DepResult {
   detail: string;
 }
 
-// -- Async helpers --
+interface LocalNetwork {
+  name: string;
+  ip: string;
+  subnet: string;
+}
 
 function spawnOk(cmd: string, args: string[], timeoutMs: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -36,17 +40,17 @@ function spawnCapture(cmd: string, args: string[], timeoutMs: number): Promise<B
   });
 }
 
-// -- Quick check: WSL + Kali only (fast, ~1-3s) --
-
 async function runQuickCheck(): Promise<{ wsl: boolean; kali: boolean }> {
   const wsl = await spawnOk('wsl', ['--status'], 4000);
   if (!wsl) return { wsl: false, kali: false };
   const buf = await spawnCapture('wsl', ['--list', '--quiet'], 4000);
   const kali = buf.toString('utf16le').toLowerCase().includes('kali');
-  return { wsl, kali };
+  if (!kali) return { wsl, kali: false };
+  const ready = await spawnOk('wsl', [
+    '-d', 'kali-linux', '--', 'bash', '-c', 'test -f "$HOME/.netsentinel/start.sh"'
+  ], 5000);
+  return { wsl, kali: ready };
 }
-
-// -- Full dep check: all components (~10-20s) --
 
 async function runDepsCheck(): Promise<DepResult[]> {
   const results: DepResult[] = [];
@@ -76,7 +80,43 @@ async function runDepsCheck(): Promise<DepResult[]> {
   return results;
 }
 
-// -- IPC handlers --
+function netmaskToPrefix(netmask: string): number {
+  return netmask.split('.').reduce((acc, octet) => {
+    let n = parseInt(octet);
+    let count = 0;
+    while (n) { count += n & 1; n >>= 1; }
+    return acc + count;
+  }, 0);
+}
+
+function calculateNetworkAddress(ip: string, netmask: string): string {
+  const ipParts = ip.split('.').map(Number);
+  const maskParts = netmask.split('.').map(Number);
+  return ipParts.map((part, i) => part & maskParts[i]).join('.');
+}
+
+function getLocalNetworks(): LocalNetwork[] {
+  const nets = networkInterfaces();
+  const result: LocalNetwork[] = [];
+  const skipWords = ['loopback', 'wsl', 'hyper-v', 'virtual', 'tunnel', 'vmware', 'vethernet', 'pseudo'];
+
+  for (const [name, addrs] of Object.entries(nets)) {
+    if (!addrs) continue;
+    const lower = name.toLowerCase();
+    if (skipWords.some(w => lower.includes(w))) continue;
+
+    for (const addr of addrs) {
+      if (addr.family !== 'IPv4' || addr.internal) continue;
+      if (addr.address.startsWith('169.254')) continue;
+
+      const prefix = netmaskToPrefix(addr.netmask);
+      const network = calculateNetworkAddress(addr.address, addr.netmask);
+      result.push({ name, ip: addr.address, subnet: `${network}/${prefix}` });
+    }
+  }
+
+  return result;
+}
 
 function setupIpcHandlers(): void {
   ipcMain.handle('deps:quick', () => runQuickCheck());
@@ -106,9 +146,9 @@ function setupIpcHandlers(): void {
   ipcMain.handle('backend:start', () => {
     startBackend();
   });
-}
 
-// -- Backend launch --
+  ipcMain.handle('network:local', () => getLocalNetworks());
+}
 
 function startBackend(): void {
   if (process.env['NODE_ENV'] === 'development') return;
@@ -125,8 +165,6 @@ function startBackend(): void {
 
   backendProcess.on('error', () => {});
 }
-
-// -- Window --
 
 function resolveIcon(): Electron.NativeImage {
   const icoPath =
@@ -181,8 +219,6 @@ async function createWindow(): Promise<void> {
     mainWindow = null;
   });
 }
-
-// -- Bootstrap --
 
 setupIpcHandlers();
 

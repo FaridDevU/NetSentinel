@@ -21,6 +21,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -69,6 +72,15 @@ public class ScanService {
         this.gobusterParserService = gobusterParserService;
         this.niktoParserService = niktoParserService;
         this.objectMapper = objectMapper;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void recoverStuckScans() {
+        int recovered = scanJobRepository.markStuckJobsAsFailed(Instant.now());
+        if (recovered > 0) {
+            log.warn("Recovered {} stuck scan(s) from previous run", recovered);
+        }
     }
 
     @Transactional

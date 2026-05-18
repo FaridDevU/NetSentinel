@@ -2,7 +2,6 @@ const ALLOWED_TOOLS: &[&str] = &["nmap", "gobuster", "nikto", "sqlmap"];
 const MAX_ARGS: usize = 30;
 const MAX_TARGET_LEN: usize = 253;
 
-// Characters that could enable shell injection
 const FORBIDDEN_CHARS: &[char] = &['&', '|', ';', '$', '`', '(', ')', '{', '}', '<', '>', '\n', '\r', '!', '*', '?', '\\'];
 
 pub fn validate_tool(tool: &str) -> Result<(), String> {
