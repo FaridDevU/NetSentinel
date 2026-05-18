@@ -46,15 +46,12 @@ pub async fn execute(req: ExecuteRequest) -> ExecuteResponse {
     let stdout = child.stdout.take().expect("stdout was piped");
     let stderr = child.stderr.take().expect("stderr was piped");
 
-    // Collect stdout and stderr concurrently in background tasks
     let stdout_task = tokio::spawn(collect_output(stdout));
     let stderr_task = tokio::spawn(collect_output(stderr));
-
     let wait_result = timeout(Duration::from_secs(timeout_secs), child.wait()).await;
 
     let duration_ms = elapsed_ms(&start);
 
-    // Always collect whatever output was captured
     let stdout_output = stdout_task.await.ok().and_then(|r| r.ok()).unwrap_or_default();
     let stderr_output = stderr_task.await.ok().and_then(|r| r.ok()).unwrap_or_default();
 
@@ -116,7 +113,6 @@ where
 }
 
 fn build_command(tool: &str, args: &[String], target: &str) -> Command {
-    // El sandbox corre dentro de Kali WSL2 — invoca las herramientas directamente
     let mut cmd = Command::new(tool);
     for arg in args {
         cmd.arg(arg);

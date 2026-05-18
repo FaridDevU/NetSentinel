@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   LocalNetworkInterface,
   PagedResponse,
@@ -16,10 +17,7 @@ export class ScanService {
   constructor(private http: HttpClient) {}
 
   startScan(target: string, parameters: string[]): Observable<StartScanResponse> {
-    return this.http.post<StartScanResponse>(`${this.base}/scan/start`, {
-      target,
-      parameters,
-    });
+    return this.http.post<StartScanResponse>(`${this.base}/scan/start`, { target, parameters });
   }
 
   getStatus(id: string): Observable<ScanStatusResponse> {
@@ -38,16 +36,19 @@ export class ScanService {
     return this.http.delete<void>(`${this.base}/scan/${id}`);
   }
 
-  getHistory(
-    page: number = 0,
-    size: number = 20
-  ): Observable<PagedResponse<ScanStatusResponse>> {
+  getHistory(page: number = 0, size: number = 20): Observable<PagedResponse<ScanStatusResponse>> {
     return this.http.get<PagedResponse<ScanStatusResponse>>(
       `${this.base}/history?page=${page}&size=${size}`
     );
   }
 
   getLocalNetworks(): Observable<LocalNetworkInterface[]> {
+    const e = (window as any).electron;
+    if (e?.getLocalNetworks) {
+      return from(e.getLocalNetworks() as Promise<LocalNetworkInterface[]>).pipe(
+        catchError(() => this.http.get<LocalNetworkInterface[]>(`${this.base}/network/local`))
+      );
+    }
     return this.http.get<LocalNetworkInterface[]>(`${this.base}/network/local`);
   }
 
