@@ -1,0 +1,63 @@
+<div class="setup-overlay">
+  <div class="setup-card">
+
+    <div class="setup-brand">
+      <img src="icon.png" class="setup-icon" alt="NetSentinel" />
+      <span class="setup-name">NetSentinel</span>
+    </div>
+
+    @if (state() === 'checking') {
+      <div class="setup-body-section">
+        <div class="spinner-lg"></div>
+        <p class="setup-msg">{{ 'setup.checking' | t }}</p>
+      </div>
+    }
+
+    @if (state() === 'missing') {
+      <div class="setup-body-section">
+        <h2 class="setup-title">{{ 'setup.missing.title' | t }}</h2>
+        <div class="dep-list">
+          @for (dep of deps(); track dep.id) {
+            <div class="dep-row">
+              <span [class]="'dep-status ' + (dep.ok ? 'ok' : 'fail')">
+                @if (dep.ok) {
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                } @else {
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                }
+              </span>
+              <span class="dep-label">{{ dep.label }}</span>
+              <span [class]="'dep-detail ' + (dep.ok ? 'ok' : 'fail')">{{ dep.detail }}</span>
+            </div>
+          }
+        </div>
+        <p class="setup-hint">{{ 'setup.missing.body' | t }}</p>
+        <div class="setup-actions">
+          <button class="btn-primary-setup" (click)="install()">{{ 'setup.btn.install' | t }}</button>
+          <button class="btn-ghost-setup" (click)="skip()">{{ 'setup.btn.later' | t }}</button>
+        </div>
+      </div>
+    }
+
+    @if (state() === 'installing') {
+      <div class="setup-body-section">
+        <h2 class="setup-title">{{ 'setup.installing.title' | t }}</h2>
+        <div class="spinner-lg"></div>
+        <p class="setup-msg">{{ 'setup.installing.body' | t }}</p>
+        <button class="btn-ghost-setup" (click)="verifyNow()">{{ 'setup.btn.verify' | t }}</button>
+      </div>
+    }
+
+    @if (state() === 'ready') {
+      <div class="setup-body-section">
+        <div class="check-circle">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="setup-title">{{ 'setup.ready.title' | t }}</h2>
+        <p class="setup-msg">{{ 'setup.ready.body' | t }}</p>
+        <button class="btn-primary-setup" (click)="continue()">{{ 'setup.btn.continue' | t }}</button>
+      </div>
+    }
+
+  </div>
+</div>
