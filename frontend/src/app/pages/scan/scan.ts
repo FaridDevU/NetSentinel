@@ -33,7 +33,7 @@ export class ScanPage implements OnInit, OnDestroy {
   scanLogs = signal<string[]>([]);
   showTerminal = signal(false);
 
-  private static readonly TARGET_REGEX = /^[a-zA-Z0-9.\-:/\[\]]{1,100}$/;
+  private static readonly TARGET_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9.\-:/\[\]]{0,99}$/;
   private static readonly DEFAULT_PARAMS = ['-sV', '-T4'];
 
   get targetError(): string | null {
@@ -57,13 +57,16 @@ export class ScanPage implements OnInit, OnDestroy {
     const logs = this.scanLogs();
     if (!logs.length) return 'scan.step.searching';
     const last = logs[logs.length - 1].toLowerCase();
-    if (last.includes('done') || last.includes('risk') || last.includes('analysis')) {
+    if (last.includes('listo') || last.includes('calculando')) {
       return 'scan.step.analyzing';
     }
-    if (last.includes('cve') || last.includes('checking') || last.includes('consulting')) {
+    if (last.includes('web') || last.includes('gobuster') || last.includes('nikto')) {
+      return 'scan.step.web';
+    }
+    if (last.includes('cve') || last.includes('consultando')) {
       return 'scan.step.checking';
     }
-    if (last.includes('nmap finished') || last.includes('host')) {
+    if (last.includes('nmap finalizado') || last.includes('dispositivo')) {
       return 'scan.step.found';
     }
     return 'scan.step.searching';
