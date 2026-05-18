@@ -7,7 +7,6 @@
   @if (!scanning()) {
     <div class="form-card">
 
-      <!-- Detectando red al cargar -->
       @if (loadingNetworks()) {
         <div class="detecting-row">
           <div class="detect-spinner"></div>
@@ -15,7 +14,6 @@
         </div>
       }
 
-      <!-- Red detectada automaticamente (1 sola) -->
       @if (!loadingNetworks() && detectedNetwork() && !showNetworkPicker()) {
         <div class="detected-card">
           <div class="detected-icon">
@@ -35,7 +33,6 @@
         </div>
       }
 
-      <!-- Selector de red cuando hay varias -->
       @if (!loadingNetworks() && showNetworkPicker()) {
         <div class="picker-label">{{ 'scan.network.choose' | t }}</div>
         <div class="network-picker">
@@ -49,7 +46,6 @@
         <button class="manual-link" type="button" (click)="showManual()">{{ 'scan.manual.link' | t }}</button>
       }
 
-      <!-- Input manual (fallback) -->
       @if (!loadingNetworks() && showManualInput() && !detectedNetwork()) {
         <div class="form-group">
           @if (localNetworks().length === 0) {

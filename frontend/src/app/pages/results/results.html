@@ -10,13 +10,12 @@
     <div class="error-block">{{ error() }}</div>
   }
 
-  <!-- Scan en progreso: vista en vivo -->
   @if (!loading() && results() && (results()!.status === 'PENDING' || results()!.status === 'RUNNING')) {
     <div class="live-view">
       <div class="live-header">
         <div class="spinner-sm"></div>
         <div class="live-info">
-          <span class="live-status">Analizando tu red...</span>
+          <span class="live-status">{{ 'results.live.scanning' | t }}</span>
           <code class="live-target">{{ results()!.target }}</code>
         </div>
       </div>
@@ -27,12 +26,11 @@
           }
         </div>
       } @else {
-        <div class="live-waiting">Iniciando analisis...</div>
+        <div class="live-waiting">{{ 'results.live.starting' | t }}</div>
       }
     </div>
   }
 
-  <!-- Resultados completos -->
   @if (!loading() && results() && results()!.status !== 'PENDING' && results()!.status !== 'RUNNING') {
 
     <div class="results-header">
@@ -45,7 +43,6 @@
       <span class="results-date">{{ 'results.scanDate' | t }} {{ results()!.startedAt | date:'d MMM yyyy, HH:mm' }} · {{ durationSeconds() }}</span>
     </div>
 
-    <!-- HERO: semaforo de riesgo -->
     @if (results()!.analysis) {
       <div [class]="'risk-hero ' + riskBannerClass()">
         <div class="risk-hero-icon">
@@ -67,7 +64,6 @@
       </div>
     }
 
-    <!-- Que debes hacer (Recomendaciones) -->
     @if (results()!.analysis && results()!.analysis!.recommendations.length > 0) {
       <div class="section-card">
         <div class="section-label">{{ 'results.whattodo' | t }}</div>
@@ -86,7 +82,6 @@
       </div>
     }
 
-    <!-- Problemas encontrados (Findings) -->
     @if (results()!.analysis) {
       <div class="section-card">
         <div class="section-label">{{ 'results.problems' | t }}
@@ -130,7 +125,6 @@
       </div>
     }
 
-    <!-- Hallazgos web (gobuster + nikto) -->
     @if (hasWebFindings(results()!.hosts)) {
       <div class="section-card">
         <div class="section-label">{{ 'results.web.title' | t }}
@@ -157,7 +151,6 @@
       </div>
     }
 
-    <!-- Toggle detalles tecnicos -->
     <div class="technical-toggle-row">
       <button class="technical-toggle" type="button" (click)="showTechnical.update(v => !v)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -181,7 +174,6 @@
       </button>
     </div>
 
-    <!-- Detalles tecnicos: dispositivos y puertos -->
     @if (showTechnical()) {
       <div class="technical-section">
         <div class="technical-title">{{ 'results.technical.title' | t }}</div>
