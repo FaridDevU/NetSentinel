@@ -1,9 +1,10 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Subscription, timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
+import { LangService } from '../../services/lang.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AnalysisFinding, HostDto, ScanResultsResponse, WebFindingDto } from '../../models/scan.models';
 
@@ -29,6 +30,8 @@ export class ResultsPage implements OnInit, OnDestroy {
   private logSub?: Subscription;
   private statusSub?: Subscription;
 
+  private lang = inject(LangService);
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -52,7 +55,7 @@ export class ResultsPage implements OnInit, OnDestroy {
         }
       },
       error: () => {
-        this.error.set('Failed to load scan results');
+        this.error.set(this.lang.t('results.error.loadFailed'));
         this.loading.set(false);
       },
     });

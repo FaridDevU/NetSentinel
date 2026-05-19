@@ -228,6 +228,8 @@ public class ScanService {
             scanJobUpdater.saveLogs(scanJobId, logsJson);
         } catch (Exception e) {
             log.warn("Failed to persist logs for scan {}: {}", scanJobId, e.getMessage());
+        } finally {
+            scanLogs.remove(scanJobId);
         }
     }
 

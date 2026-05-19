@@ -1,4 +1,4 @@
-const ALLOWED_TOOLS: &[&str] = &["nmap", "gobuster", "nikto", "sqlmap"];
+const ALLOWED_TOOLS: &[&str] = &["nmap", "gobuster", "nikto"];
 const MAX_ARGS: usize = 30;
 const MAX_TARGET_LEN: usize = 253;
 
