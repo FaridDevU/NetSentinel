@@ -36,7 +36,7 @@
 
       <div class="sidebar-footer">
         @if (offline()) {
-          <div class="offline-dot" title="Backend unreachable"></div>
+          <div class="offline-dot" [title]="'offline.dot' | t"></div>
         }
         <span class="version">v0.1.0</span>
         <button class="lang-toggle" (click)="lang.toggle()">
