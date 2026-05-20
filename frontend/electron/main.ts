@@ -139,8 +139,12 @@ function setupIpcHandlers(): void {
     const d = installDir.replace(/\\/g, '\\\\');
     spawn('powershell.exe', [
       '-Command',
-      `Start-Process powershell -Verb RunAs -ArgumentList '-NoExit -ExecutionPolicy Bypass -File "${s}" "${d}"'`
+      `Start-Process powershell -Verb RunAs -WindowStyle Hidden -ArgumentList '-ExecutionPolicy Bypass -File "${s}" "${d}"'`
     ], { detached: true, stdio: 'ignore' }).unref();
+  });
+
+  ipcMain.handle('system:reboot', () => {
+    spawn('shutdown.exe', ['/r', '/t', '10'], { stdio: 'ignore' });
   });
 
   ipcMain.handle('backend:start', () => {

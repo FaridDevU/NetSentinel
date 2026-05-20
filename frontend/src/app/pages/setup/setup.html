@@ -43,8 +43,29 @@
       <div class="setup-body-section">
         <h2 class="setup-title">{{ 'setup.installing.title' | t }}</h2>
         <div class="spinner-lg"></div>
-        <p class="setup-msg">{{ 'setup.installing.body' | t }}</p>
+        <p class="setup-msg">{{ statusMsg() ? (statusMsg() | t) : ('setup.installing.body' | t) }}</p>
         <button class="btn-ghost-setup" (click)="verifyNow()">{{ 'setup.btn.verify' | t }}</button>
+      </div>
+    }
+
+    @if (state() === 'needs_reboot') {
+      <div class="setup-body-section">
+        <h2 class="setup-title">{{ 'setup.needs_reboot.title' | t }}</h2>
+        <p class="setup-msg">{{ 'setup.needs_reboot.body' | t }}</p>
+        <div class="setup-actions">
+          <button class="btn-primary-setup" (click)="reboot()">{{ 'setup.btn.reboot' | t }}</button>
+        </div>
+      </div>
+    }
+
+    @if (state() === 'error') {
+      <div class="setup-body-section">
+        <h2 class="setup-title">{{ 'setup.error.title' | t }}</h2>
+        <p class="setup-msg">{{ 'setup.error.body' | t }}</p>
+        <div class="setup-actions">
+          <button class="btn-primary-setup" (click)="retry()">{{ 'setup.btn.retry' | t }}</button>
+          <button class="btn-ghost-setup" (click)="skip()">{{ 'setup.btn.later' | t }}</button>
+        </div>
       </div>
     }
 
