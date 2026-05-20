@@ -1,14 +1,5 @@
 export type ScanStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
-export interface ScanStatusResponse {
-  id: string;
-  target: string;
-  status: ScanStatus;
-  startedAt: string;
-  completedAt: string | null;
-  errorMessage: string | null;
-}
-
 export interface CveDto {
   cveId: string;
   description: string;
@@ -102,3 +93,80 @@ export interface LocalNetworkInterface {
   ip: string;
   subnet: string;
 }
+
+export type ScanProfile = 'RAPIDO' | 'ESTANDAR' | 'COMPLETO';
+
+export interface ScanStatusResponse {
+  id: string;
+  target: string;
+  status: ScanStatus;
+  startedAt: string;
+  completedAt: string | null;
+  errorMessage: string | null;
+  riskLevel: string | null;
+  riskScore: number | null;
+}
+
+export interface DashboardResponse {
+  totalScans: number;
+  completedScans: number;
+  failedScans: number;
+  activeScans: number;
+  totalHosts: number;
+  totalCves: number;
+  cvesBySeverity: Record<string, number>;
+  averageRiskScore: number;
+  recentScans: RecentScanEntry[];
+}
+
+export interface RecentScanEntry {
+  id: string;
+  target: string;
+  status: string;
+  startedAt: string;
+  completedAt: string | null;
+  riskLevel: string | null;
+  riskScore: number | null;
+  hostCount: number;
+}
+
+export interface AssetDto {
+  ip: string;
+  hostname: string | null;
+  os: string | null;
+  macAddress: string | null;
+  vendor: string | null;
+  lastScanDate: string | null;
+  lastScanId: string | null;
+  openPorts: number;
+  totalCves: number;
+  criticalCves: number;
+  highCves: number;
+  riskLevel: string;
+}
+
+export interface ScanCompareResponse {
+  scanAId: string;
+  scanBId: string;
+  scanATarget: string;
+  scanBTarget: string;
+  scanADate: string;
+  scanBDate: string;
+  newFindings: ComparedFinding[];
+  resolvedFindings: ComparedFinding[];
+  persistentFindings: ComparedFinding[];
+  newCount: number;
+  resolvedCount: number;
+  persistentCount: number;
+}
+
+export interface ComparedFinding {
+  severity: string;
+  title: string;
+  host: string;
+  port: number;
+  service: string;
+  relatedCves: string[];
+}
+
+export type FindingStatusMap = Record<string, string>;

@@ -3,8 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, from } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
+  AssetDto,
+  DashboardResponse,
+  FindingStatusMap,
   LocalNetworkInterface,
   PagedResponse,
+  ScanCompareResponse,
   ScanResultsResponse,
   ScanStatusResponse,
   StartScanResponse,
@@ -54,5 +58,29 @@ export class ScanService {
 
   getScanLogs(id: string): Observable<{ lines: string[] }> {
     return this.http.get<{ lines: string[] }>(`${this.base}/scan/${id}/logs`);
+  }
+
+  getDashboard(): Observable<DashboardResponse> {
+    return this.http.get<DashboardResponse>(`${this.base}/dashboard`);
+  }
+
+  getAssets(): Observable<AssetDto[]> {
+    return this.http.get<AssetDto[]>(`${this.base}/assets`);
+  }
+
+  compareScans(a: string, b: string): Observable<ScanCompareResponse> {
+    return this.http.get<ScanCompareResponse>(`${this.base}/scan/compare?a=${a}&b=${b}`);
+  }
+
+  getFindingStatuses(scanId: string): Observable<FindingStatusMap> {
+    return this.http.get<FindingStatusMap>(`${this.base}/scan/${scanId}/findings/statuses`);
+  }
+
+  updateFindingStatus(scanId: string, findingKey: string, status: string): Observable<unknown> {
+    return this.http.put(`${this.base}/scan/${scanId}/findings/status`, { findingKey, status });
+  }
+
+  exportUrl(scanId: string, format: 'pdf' | 'json' | 'csv'): string {
+    return `${this.base}/scan/${scanId}/export/${format}`;
   }
 }

@@ -28,7 +28,8 @@ public class NvdService {
 
     private static final Logger log = LoggerFactory.getLogger(NvdService.class);
     private static final int MAX_RESULTS = 20;
-    private static final long REQUEST_INTERVAL_MS = 6200;
+    private static final long INTERVAL_NO_KEY_MS = 6200;
+    private static final long INTERVAL_WITH_KEY_MS = 700;
 
     @Value("${nvd.api.base-url}")
     private String baseUrl;
@@ -82,9 +83,10 @@ public class NvdService {
     }
 
     private void applyRateLimit() {
+        long interval = (apiKey != null && !apiKey.isBlank()) ? INTERVAL_WITH_KEY_MS : INTERVAL_NO_KEY_MS;
         synchronized (rateLimitLock) {
             long now = System.currentTimeMillis();
-            long waitMs = REQUEST_INTERVAL_MS - (now - lastRequestTime);
+            long waitMs = interval - (now - lastRequestTime);
             if (waitMs > 0) {
                 try {
                     Thread.sleep(waitMs);

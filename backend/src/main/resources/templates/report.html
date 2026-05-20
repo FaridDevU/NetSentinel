@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+<meta charset="UTF-8"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#1a1a2e;background:#fff;padding:30px 40px}
+.rh{border-bottom:3px solid #6c63ff;padding-bottom:14px;margin-bottom:20px}
+.rt{font-size:20px;font-weight:700;color:#6c63ff}
+.rs{font-size:12px;color:#555;margin-top:3px}
+.rm{font-size:10px;color:#888;margin-top:5px}
+.rb{padding:12px 16px;border-radius:5px;margin-bottom:18px;border-left:5px solid #ccc}
+.rb-critical{background:#fee2e2;border-left-color:#dc2626}
+.rb-high{background:#fff7ed;border-left-color:#f59e0b}
+.rb-medium{background:#fefce8;border-left-color:#eab308}
+.rb-low{background:#f0fdf4;border-left-color:#22c55e}
+.rb-info{background:#f0f9ff;border-left-color:#0ea5e9}
+.rb-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.rb-score{font-size:10px;color:#555;margin-bottom:5px}
+.rb-summary{font-size:10px;color:#444;line-height:1.5}
+.sg{width:100%;border-collapse:separate;border-spacing:6px;margin-bottom:18px}
+.sg td{border:1px solid #e2e8f0;border-radius:5px;padding:10px;text-align:center;width:25%}
+.sg .sv{font-size:20px;font-weight:700;color:#6c63ff}
+.sg .sl{font-size:9px;color:#888;margin-top:2px}
+.sec{margin-bottom:20px}
+.sec-title{font-size:12px;font-weight:700;color:#1a1a2e;border-bottom:1px solid #e2e8f0;padding-bottom:5px;margin-bottom:8px}
+table.data{width:100%;border-collapse:collapse;font-size:10px}
+table.data th{background:#f8fafc;font-weight:600;padding:6px 8px;text-align:left;border-bottom:2px solid #e2e8f0}
+table.data td{padding:5px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+table.data tr:nth-child(even) td{background:#fafafa}
+.sev{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700}
+.sev-critical{background:#dc2626;color:white}
+.sev-high{background:#f59e0b;color:white}
+.sev-medium{background:#eab308;color:#333}
+.sev-low{background:#22c55e;color:white}
+.sev-info{background:#0ea5e9;color:white}
+.rec-list{padding-left:0;list-style:none}
+.rec-item{padding:5px 0 5px 14px;border-bottom:1px solid #f1f5f9;font-size:10px;line-height:1.5;position:relative}
+.rec-item::before{content:"•";color:#6c63ff;font-weight:bold;position:absolute;left:0}
+.footer{margin-top:24px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:9px;color:#aaa;text-align:center}
+code{font-family:monospace;font-size:9px;background:#f1f5f9;padding:1px 3px;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="rh">
+  <div class="rt">NetSentinel — Reporte de Seguridad</div>
+  <div class="rs" th:text="${scan.target}"></div>
+  <div class="rm">Generado: <span th:text="${reportDate}"></span> &nbsp;|&nbsp; Duracion: <span th:text="${duration}"></span></div>
+</div>
+
+<div th:class="'rb rb-' + ${#strings.toLowerCase(riskLevel)}">
+  <div class="rb-title" th:text="${riskTitle}"></div>
+  <div class="rb-score">Puntuacion de riesgo: <span th:text="${riskScore}"></span> / 10</div>
+  <div class="rb-summary" th:text="${analysis != null ? analysis.summary() : 'Sin datos de analisis'}"></div>
+</div>
+
+<table class="sg">
+  <tr>
+    <td><div class="sv" th:text="${totalHosts}"></div><div class="sl">Dispositivos</div></td>
+    <td><div class="sv" th:text="${totalPorts}"></div><div class="sl">Puertos abiertos</div></td>
+    <td><div class="sv" th:text="${totalCves}"></div><div class="sl">CVEs encontradas</div></td>
+    <td><div class="sv" th:text="${totalFindings}"></div><div class="sl">Hallazgos</div></td>
+  </tr>
+</table>
+
+<div class="sec" th:if="${not #lists.isEmpty(findings)}">
+  <div class="sec-title">Problemas encontrados</div>
+  <table class="data">
+    <thead>
+      <tr>
+        <th style="width:70px">Severidad</th>
+        <th>Problema</th>
+        <th style="width:90px">Dispositivo</th>
+        <th style="width:80px">Puerto/Servicio</th>
+        <th style="width:120px">CVEs</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="f : ${findings}">
+        <td><span th:class="'sev sev-' + ${#strings.toLowerCase(f.severity())}" th:text="${f.severity()}"></span></td>
+        <td th:text="${f.title()}"></td>
+        <td><code th:text="${f.host()}"></code></td>
+        <td th:text="${f.port()} + '/' + ${f.service()}"></td>
+        <td th:text="${#lists.isEmpty(f.relatedCves()) ? '—' : #strings.listJoin(f.relatedCves(), ', ')}"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="sec" th:if="${not #lists.isEmpty(webFindings)}">
+  <div class="sec-title">Hallazgos web</div>
+  <table class="data">
+    <thead>
+      <tr>
+        <th style="width:70px">Severidad</th>
+        <th style="width:70px">Herramienta</th>
+        <th>URL</th>
+        <th>Descripcion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="wf : ${webFindings}">
+        <td><span th:class="'sev sev-' + ${#strings.toLowerCase(wf.severity())}" th:text="${wf.severity()}"></span></td>
+        <td th:text="${wf.tool()}"></td>
+        <td><code th:text="${wf.url()}"></code></td>
+        <td th:text="${wf.description()}"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="sec" th:if="${not #lists.isEmpty(recommendations)}">
+  <div class="sec-title">Recomendaciones</div>
+  <ul class="rec-list">
+    <li class="rec-item" th:each="rec : ${recommendations}" th:text="${rec}"></li>
+  </ul>
+</div>
+
+<div class="sec" th:if="${not #lists.isEmpty(hosts)}">
+  <div class="sec-title">Dispositivos y puertos detectados</div>
+  <table class="data">
+    <thead>
+      <tr>
+        <th>IP / Hostname</th>
+        <th>Sistema operativo</th>
+        <th style="width:90px">Puerto</th>
+        <th>Servicio</th>
+        <th>Version</th>
+        <th style="width:50px">Estado</th>
+        <th style="width:50px">CVEs</th>
+      </tr>
+    </thead>
+    <tbody>
+      <th:block th:each="host : ${hosts}">
+        <tr th:each="port : ${host.ports()}">
+          <td th:text="${host.ip()} + ${host.hostname() != null ? ' / ' + host.hostname() : ''}"></td>
+          <td th:text="${host.os() != null ? host.os() : '—'}"></td>
+          <td><code th:text="${port.portNumber()} + '/' + ${port.protocol()}"></code></td>
+          <td th:text="${port.service() != null ? port.service() : '—'}"></td>
+          <td th:text="${port.version() != null ? port.version() : '—'}"></td>
+          <td th:text="${port.state()}"></td>
+          <td th:text="${#lists.size(port.cves())}"></td>
+        </tr>
+      </th:block>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">Generado por NetSentinel &nbsp;|&nbsp; <span th:text="${reportDate}"></span></div>
+
+</body>
+</html>

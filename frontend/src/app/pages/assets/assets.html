@@ -1,0 +1,100 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">{{ 'assets.title' | t }}</h1>
+    <p class="page-subtitle">{{ 'assets.subtitle' | t }}</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>{{ 'assets.loading' | t }}</span>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-block">{{ error() }}</div>
+  }
+
+  @if (!loading() && assets().length === 0 && !error()) {
+    <div class="empty-state">
+      <p>{{ 'assets.empty' | t }}</p>
+    </div>
+  }
+
+  @if (!loading() && assets().length > 0) {
+    <div class="filter-row">
+      <span class="filter-label">{{ 'assets.filter' | t }}</span>
+      <div class="filter-chips">
+        <button [class]="'filter-chip' + (filterRisk() === '' ? ' active' : '')" (click)="filterRisk.set('')">{{ 'assets.filter.all' | t }} <span class="chip-count">{{ assets().length }}</span></button>
+        <button [class]="'filter-chip critical' + (filterRisk() === 'CRITICAL' ? ' active' : '')" (click)="filterRisk.set(filterRisk() === 'CRITICAL' ? '' : 'CRITICAL')">{{ 'severity.critical' | t }}</button>
+        <button [class]="'filter-chip high' + (filterRisk() === 'HIGH' ? ' active' : '')" (click)="filterRisk.set(filterRisk() === 'HIGH' ? '' : 'HIGH')">{{ 'severity.high' | t }}</button>
+        <button [class]="'filter-chip medium' + (filterRisk() === 'MEDIUM' ? ' active' : '')" (click)="filterRisk.set(filterRisk() === 'MEDIUM' ? '' : 'MEDIUM')">{{ 'severity.medium' | t }}</button>
+        <button [class]="'filter-chip low' + (filterRisk() === 'LOW' ? ' active' : '')" (click)="filterRisk.set(filterRisk() === 'LOW' ? '' : 'LOW')">{{ 'severity.low' | t }}</button>
+      </div>
+    </div>
+
+    <div class="assets-table-wrap">
+      <table class="assets-table">
+        <thead>
+          <tr>
+            <th>{{ 'assets.col.ip' | t }}</th>
+            <th>{{ 'assets.col.os' | t }}</th>
+            <th>{{ 'assets.col.ports' | t }}</th>
+            <th>{{ 'assets.col.cves' | t }}</th>
+            <th>{{ 'assets.col.risk' | t }}</th>
+            <th>{{ 'assets.col.lastScan' | t }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (asset of filtered(); track asset.ip) {
+            <tr class="asset-row">
+              <td>
+                <div class="asset-ip">
+                  <code>{{ asset.ip }}</code>
+                  @if (asset.hostname) {
+                    <span class="asset-hostname">{{ asset.hostname }}</span>
+                  }
+                </div>
+              </td>
+              <td class="asset-os">{{ asset.os ?? '—' }}</td>
+              <td class="asset-num">{{ asset.openPorts }}</td>
+              <td>
+                <div class="cve-summary">
+                  @if (asset.criticalCves > 0) {
+                    <span class="cve-chip critical">{{ asset.criticalCves }} C</span>
+                  }
+                  @if (asset.highCves > 0) {
+                    <span class="cve-chip high">{{ asset.highCves }} H</span>
+                  }
+                  @if (asset.totalCves === 0) {
+                    <span class="na">—</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span [class]="'risk-badge ' + riskClass(asset.riskLevel)">
+                  {{ severityKey(asset.riskLevel) | t }}
+                </span>
+              </td>
+              <td class="asset-date">
+                @if (asset.lastScanDate) {
+                  {{ asset.lastScanDate | date:'d MMM yyyy' }}
+                } @else {
+                  <span class="na">—</span>
+                }
+              </td>
+              <td>
+                @if (asset.lastScanId) {
+                  <button class="view-btn" (click)="openResults(asset.lastScanId)">
+                    {{ 'assets.view' | t }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

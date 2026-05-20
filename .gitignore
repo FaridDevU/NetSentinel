@@ -13,6 +13,7 @@ yarn-error.log*
 # Angular
 frontend/.angular/
 frontend/dist/
+frontend/dist-installer/
 
 # Java / Maven
 backend/target/

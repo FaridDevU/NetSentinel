@@ -1,0 +1,104 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">{{ 'compare.title' | t }}</h1>
+    <p class="page-subtitle">{{ 'compare.subtitle' | t }}</p>
+  </div>
+
+  <div class="compare-form">
+    <div class="scan-select-group">
+      <label class="select-label">{{ 'compare.scanA' | t }}</label>
+      <select class="scan-select" [value]="scanIdA()" (change)="scanIdA.set($any($event.target).value)" [disabled]="loadingScans()">
+        <option value="">{{ 'compare.choose' | t }}</option>
+        @for (s of scans(); track s.id) {
+          <option [value]="s.id">{{ s.target }} — {{ s.startedAt | date:'d MMM yyyy HH:mm' }}</option>
+        }
+      </select>
+    </div>
+    <div class="vs-label">VS</div>
+    <div class="scan-select-group">
+      <label class="select-label">{{ 'compare.scanB' | t }}</label>
+      <select class="scan-select" [value]="scanIdB()" (change)="scanIdB.set($any($event.target).value)" [disabled]="loadingScans()">
+        <option value="">{{ 'compare.choose' | t }}</option>
+        @for (s of scans(); track s.id) {
+          <option [value]="s.id">{{ s.target }} — {{ s.startedAt | date:'d MMM yyyy HH:mm' }}</option>
+        }
+      </select>
+    </div>
+    <button class="compare-btn" (click)="compare()" [disabled]="!canCompare() || loading()">
+      @if (loading()) {
+        <div class="spinner-sm"></div>
+      }
+      {{ 'compare.run' | t }}
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="error-block">{{ error() }}</div>
+  }
+
+  @if (result()) {
+    <div class="compare-summary">
+      <div [class]="'summary-chip new' + (result()!.newCount > 0 ? ' has-items' : '')">
+        <span class="chip-num">{{ result()!.newCount }}</span>
+        <span class="chip-label">{{ 'compare.new' | t }}</span>
+      </div>
+      <div [class]="'summary-chip resolved' + (result()!.resolvedCount > 0 ? ' has-items' : '')">
+        <span class="chip-num">{{ result()!.resolvedCount }}</span>
+        <span class="chip-label">{{ 'compare.resolved' | t }}</span>
+      </div>
+      <div class="summary-chip persistent">
+        <span class="chip-num">{{ result()!.persistentCount }}</span>
+        <span class="chip-label">{{ 'compare.persistent' | t }}</span>
+      </div>
+    </div>
+
+    @if (result()!.newFindings.length > 0) {
+      <div class="findings-section">
+        <div class="findings-header new">{{ 'compare.new' | t }} <span class="count-badge">{{ result()!.newCount }}</span></div>
+        <div class="findings-list">
+          @for (f of result()!.newFindings; track $index) {
+            <div class="finding-row">
+              <span [class]="'sev-dot ' + sevClass(f.severity)"></span>
+              <span class="finding-title">{{ f.title }}</span>
+              <code class="finding-host">{{ f.host }}</code>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (result()!.resolvedFindings.length > 0) {
+      <div class="findings-section">
+        <div class="findings-header resolved">{{ 'compare.resolved' | t }} <span class="count-badge">{{ result()!.resolvedCount }}</span></div>
+        <div class="findings-list">
+          @for (f of result()!.resolvedFindings; track $index) {
+            <div class="finding-row resolved-item">
+              <span [class]="'sev-dot ' + sevClass(f.severity)"></span>
+              <span class="finding-title">{{ f.title }}</span>
+              <code class="finding-host">{{ f.host }}</code>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (result()!.persistentFindings.length > 0) {
+      <div class="findings-section">
+        <div class="findings-header persistent">{{ 'compare.persistent' | t }} <span class="count-badge">{{ result()!.persistentCount }}</span></div>
+        <div class="findings-list">
+          @for (f of result()!.persistentFindings; track $index) {
+            <div class="finding-row">
+              <span [class]="'sev-dot ' + sevClass(f.severity)"></span>
+              <span class="finding-title">{{ f.title }}</span>
+              <code class="finding-host">{{ f.host }}</code>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (result()!.newCount === 0 && result()!.resolvedCount === 0 && result()!.persistentCount === 0) {
+      <p class="no-findings">{{ 'compare.noFindings' | t }}</p>
+    }
+  }
+</div>

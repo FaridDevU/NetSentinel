@@ -6,7 +6,7 @@ import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
 import { LangService } from '../../services/lang.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
-import { LocalNetworkInterface, ScanStatus } from '../../models/scan.models';
+import { LocalNetworkInterface, ScanProfile, ScanStatus } from '../../models/scan.models';
 
 @Component({
   selector: 'app-scan',
@@ -33,9 +33,14 @@ export class ScanPage implements OnInit, OnDestroy {
   errorMessage = signal<string | null>(null);
   scanLogs = signal<string[]>([]);
   showTerminal = signal(false);
+  scanProfile = signal<ScanProfile>('ESTANDAR');
 
   private static readonly TARGET_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9.\-:/\[\]]{0,99}$/;
-  private static readonly DEFAULT_PARAMS = ['-sV', '-T4'];
+  private static readonly PROFILE_PARAMS: Record<ScanProfile, string[]> = {
+    RAPIDO:   ['-sV', '-T4', '--top-ports', '100'],
+    ESTANDAR: ['-sV', '-T4'],
+    COMPLETO: ['-sV', '-T4', '-p-'],
+  };
 
   get targetError(): string | null {
     if (!this.targetTouched || !this.target.trim()) return null;
@@ -166,7 +171,7 @@ export class ScanPage implements OnInit, OnDestroy {
       this.elapsedSeconds.update((s) => s + 1);
     });
 
-    this.scanService.startScan(target, ScanPage.DEFAULT_PARAMS).subscribe({
+    this.scanService.startScan(target, ScanPage.PROFILE_PARAMS[this.scanProfile()]).subscribe({
       next: (res) => {
         this.currentScanId.set(res.id);
         this.currentStatus.set(res.status);

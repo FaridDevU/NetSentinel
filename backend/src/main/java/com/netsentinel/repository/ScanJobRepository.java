@@ -14,6 +14,7 @@ import java.util.UUID;
 
 public interface ScanJobRepository extends JpaRepository<ScanJob, UUID> {
     Page<ScanJob> findAllByOrderByStartedAtDesc(Pageable pageable);
+    long countByStatus(com.netsentinel.enums.ScanStatus status);
 
     @Transactional
     @Modifying

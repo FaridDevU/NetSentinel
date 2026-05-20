@@ -44,7 +44,7 @@ $wslPath = $InstallDir -replace "\\", "/"
 $wslPath = "/mnt/" + $wslPath.Substring(0,1).ToLower() + $wslPath.Substring(2)
 
 Write-Output "Installing tools in Kali Linux..."
-wsl -d kali-linux -- bash -c "sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq nmap curl wget openjdk-21-jre-headless gobuster nikto dirb postgresql postgresql-client 2>/dev/null"
+wsl -d kali-linux -- bash -c "sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq nmap curl wget openjdk-21-jre-headless gobuster nikto dirb postgresql postgresql-client 2>/dev/null && sudo mkdir -p /usr/share/wordlists && sudo ln -sf /usr/share/dirb/wordlists /usr/share/wordlists/dirb 2>/dev/null || true"
 
 Write-Output "Configuring PostgreSQL..."
 wsl -d kali-linux -- bash -c "
@@ -101,8 +101,17 @@ wsl -d kali-linux -- bash -c "
     mkdir -p ~/.netsentinel
     {
         echo '#!/bin/bash'
+        echo 'if [ -f \"\$HOME/.netsentinel/config.env\" ]; then'
+        echo '    set -a'
+        echo '    source \"\$HOME/.netsentinel/config.env\"'
+        echo '    set +a'
+        echo 'fi'
         echo 'sudo service postgresql start 2>/dev/null || true'
-        echo 'if ! pgrep -x sandbox > /dev/null 2>&1; then'
+        echo 'for i in \$(seq 1 15); do'
+        echo '    pg_isready -h 127.0.0.1 -U netsentinel -d netsentinel -q 2>/dev/null && break'
+        echo '    sleep 1'
+        echo 'done'
+        echo 'if ! pgrep -f netsentinel-sandbox > /dev/null 2>&1; then'
         echo '    nohup ~/.netsentinel/sandbox > ~/.netsentinel/sandbox.log 2>&1 &'
         echo '    sleep 1'
         echo 'fi'

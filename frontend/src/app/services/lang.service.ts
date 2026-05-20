@@ -113,6 +113,23 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'status.completed': 'Completado',
     'status.failed': 'Error',
     'status.cancelled': 'Cancelado',
+
+    'scan.profile.label': 'Nivel de analisis',
+    'scan.profile.quick': 'Rapido',
+    'scan.profile.quick.hint': '100 puertos, ~1 min',
+    'scan.profile.standard': 'Estandar',
+    'scan.profile.standard.hint': '1000 puertos, ~5 min',
+    'scan.profile.full': 'Completo',
+    'scan.profile.full.hint': 'Todos los puertos, ~30 min',
+
+    'results.export.pdf': 'Exportar como PDF',
+    'results.export.json': 'Exportar como JSON',
+    'results.export.csv': 'Exportar como CSV',
+
+    'results.finding.status.open': 'Abierto',
+    'results.finding.status.acknowledged': 'Revisado',
+    'results.finding.status.false_positive': 'Falso positivo',
+    'results.finding.status.resolved': 'Resuelto',
   },
   en: {
     'nav.newScan': 'Scan',
@@ -226,6 +243,23 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'status.completed': 'Completed',
     'status.failed': 'Failed',
     'status.cancelled': 'Cancelled',
+
+    'scan.profile.label': 'Analysis level',
+    'scan.profile.quick': 'Quick',
+    'scan.profile.quick.hint': '100 ports, ~1 min',
+    'scan.profile.standard': 'Standard',
+    'scan.profile.standard.hint': '1000 ports, ~5 min',
+    'scan.profile.full': 'Complete',
+    'scan.profile.full.hint': 'All ports, ~30 min',
+
+    'results.export.pdf': 'Export as PDF',
+    'results.export.json': 'Export as JSON',
+    'results.export.csv': 'Export as CSV',
+
+    'results.finding.status.open': 'Open',
+    'results.finding.status.acknowledged': 'Acknowledged',
+    'results.finding.status.false_positive': 'False positive',
+    'results.finding.status.resolved': 'Resolved',
   },
 };
 
