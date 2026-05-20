@@ -16,7 +16,7 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class ScanService {
-  private readonly base = 'http://127.0.0.1:8080/api';
+  private readonly base = 'http://localhost:8080/api';
 
   constructor(private http: HttpClient) {}
 
