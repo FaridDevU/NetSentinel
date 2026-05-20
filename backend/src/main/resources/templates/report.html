@@ -46,7 +46,7 @@ code{font-family:monospace;font-size:9px;background:#f1f5f9;padding:1px 3px;bord
 <div class="rh">
   <div class="rt">NetSentinel — Reporte de Seguridad</div>
   <div class="rs" th:text="${scan.target}"></div>
-  <div class="rm">Generado: <span th:text="${reportDate}"></span> &nbsp;|&nbsp; Duracion: <span th:text="${duration}"></span></div>
+  <div class="rm">Generado: <span th:text="${reportDate}"></span> &#160;|&#160; Duracion: <span th:text="${duration}"></span></div>
 </div>
 
 <div th:class="'rb rb-' + ${#strings.toLowerCase(riskLevel)}">
@@ -147,7 +147,7 @@ code{font-family:monospace;font-size:9px;background:#f1f5f9;padding:1px 3px;bord
   </table>
 </div>
 
-<div class="footer">Generado por NetSentinel &nbsp;|&nbsp; <span th:text="${reportDate}"></span></div>
+<div class="footer">Generado por NetSentinel &#160;|&#160; <span th:text="${reportDate}"></span></div>
 
 </body>
 </html>
