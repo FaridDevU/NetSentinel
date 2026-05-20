@@ -14,4 +14,16 @@ export const routes: Routes = [
     path: 'results/:id',
     loadComponent: () => import('./pages/results/results').then((m) => m.ResultsPage),
   },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
+  },
+  {
+    path: 'compare',
+    loadComponent: () => import('./pages/compare/compare').then((m) => m.ComparePage),
+  },
+  {
+    path: 'assets',
+    loadComponent: () => import('./pages/assets/assets').then((m) => m.AssetsPage),
+  },
 ];

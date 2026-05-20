@@ -12,7 +12,7 @@
   }
 
   @if (error()) {
-    <div class="error-block">{{ error() }}</div>
+    <div class="error-block">{{ error()! | t }}</div>
   }
 
   @if (!loading() && assets().length === 0 && !error()) {
