@@ -55,6 +55,22 @@
         </div>
         <h2 class="setup-title">{{ 'setup.ready.title' | t }}</h2>
         <p class="setup-msg">{{ 'setup.ready.body' | t }}</p>
+        <div class="nvd-section">
+          <p class="nvd-label">{{ 'setup.nvd.label' | t }}</p>
+          <p class="nvd-hint">{{ 'setup.nvd.hint' | t }}</p>
+          <div class="nvd-row">
+            <input
+              type="text"
+              class="nvd-input"
+              [placeholder]="'setup.nvd.placeholder' | t"
+              [value]="nvdKey"
+              (input)="nvdKey = $any($event.target).value; nvdSaved.set(false)"
+            />
+            <button class="nvd-btn" (click)="saveNvdKey()" [disabled]="!nvdKey.trim() || nvdSaved()">
+              {{ nvdSaved() ? ('setup.nvd.saved' | t) : ('setup.nvd.save' | t) }}
+            </button>
+          </div>
+        </div>
         <button class="btn-primary-setup" (click)="continue()">{{ 'setup.btn.continue' | t }}</button>
       </div>
     }

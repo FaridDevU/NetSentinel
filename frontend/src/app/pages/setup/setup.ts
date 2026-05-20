@@ -21,6 +21,8 @@ export class SetupPage implements OnInit, OnDestroy {
 
   state = signal<SetupState>('checking');
   deps = signal<DepResult[]>([]);
+  nvdKey = '';
+  nvdSaved = signal(false);
 
   private pollTimer?: ReturnType<typeof setInterval>;
 
@@ -72,6 +74,14 @@ export class SetupPage implements OnInit, OnDestroy {
       clearInterval(this.pollTimer);
       this.pollTimer = undefined;
     }
+  }
+
+  saveNvdKey(): void {
+    const key = this.nvdKey.trim();
+    if (!key) return;
+    this.electron.saveNvdKey(key).then(() => {
+      this.nvdSaved.set(true);
+    }).catch(() => {});
   }
 
   skip(): void {

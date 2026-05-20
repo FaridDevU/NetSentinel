@@ -332,9 +332,9 @@ public class ScanService {
                 .toList();
 
         AnalysisReport analysis = null;
-        if (job.getAiReport() != null) {
+        if (job.getAnalysisReport() != null) {
             try {
-                analysis = objectMapper.readValue(job.getAiReport(), AnalysisReport.class);
+                analysis = objectMapper.readValue(job.getAnalysisReport(), AnalysisReport.class);
             } catch (JsonProcessingException e) {
                 log.warn("Could not deserialize analysis for scan {}", job.getId());
             }

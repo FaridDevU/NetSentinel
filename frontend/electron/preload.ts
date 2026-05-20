@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld("electron", {
   runSetup: () => ipcRenderer.invoke('deps:install'),
   startBackend: () => ipcRenderer.invoke('backend:start'),
   getLocalNetworks: () => ipcRenderer.invoke('network:local'),
+  saveNvdKey: (key: string) => ipcRenderer.invoke('config:saveNvdKey', key),
 });

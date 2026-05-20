@@ -148,6 +148,19 @@ function setupIpcHandlers(): void {
   });
 
   ipcMain.handle('network:local', () => getLocalNetworks());
+
+  ipcMain.handle('config:saveNvdKey', (_evt, rawKey: string) => {
+    const key = String(rawKey).replace(/[^a-zA-Z0-9\-]/g, '');
+    if (!key) return;
+    return new Promise<void>((resolve) => {
+      const proc = spawn('wsl', [
+        '-d', 'kali-linux', '--', 'bash', '-c',
+        `mkdir -p ~/.netsentinel && printf 'NVD_API_KEY=%s\\n' '${key}' > ~/.netsentinel/config.env`
+      ], { stdio: 'ignore' });
+      proc.on('close', () => resolve());
+      proc.on('error', () => resolve());
+    });
+  });
 }
 
 function startBackend(): void {
