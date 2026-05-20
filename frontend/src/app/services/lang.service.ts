@@ -21,6 +21,11 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'setup.btn.later': 'Continuar sin instalar',
     'setup.btn.verify': 'Verificar estado ahora',
     'setup.btn.continue': 'Ir al escaner',
+    'setup.nvd.label': 'Velocidad de escaneo (opcional)',
+    'setup.nvd.hint': 'Con una API key de NVD se obtienen hasta 50 consultas/min en lugar de 6. Registro gratuito en nvd.nist.gov.',
+    'setup.nvd.placeholder': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    'setup.nvd.save': 'Guardar',
+    'setup.nvd.saved': 'Guardado',
 
     'scan.title': 'Analizar mi red',
     'scan.subtitle': 'Detecta problemas de seguridad en todos los dispositivos conectados a tu red',
@@ -196,6 +201,11 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'setup.btn.later': 'Continue without installing',
     'setup.btn.verify': 'Check status now',
     'setup.btn.continue': 'Go to scanner',
+    'setup.nvd.label': 'Scan speed (optional)',
+    'setup.nvd.hint': 'An NVD API key gives you 50 requests/min instead of 6. Free registration at nvd.nist.gov.',
+    'setup.nvd.placeholder': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    'setup.nvd.save': 'Save',
+    'setup.nvd.saved': 'Saved',
 
     'scan.title': 'Analyze my network',
     'scan.subtitle': 'Detect security issues in all devices connected to your network',

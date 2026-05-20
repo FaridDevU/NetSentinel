@@ -45,8 +45,8 @@ public class ScanJob {
     @Column(columnDefinition = "TEXT")
     private String errorMessage;
 
-    @Column(columnDefinition = "TEXT")
-    private String aiReport;
+    @Column(name = "ai_report", columnDefinition = "TEXT")
+    private String analysisReport;
 
     @Column(name = "scan_logs", columnDefinition = "TEXT")
     private String scanLogs;

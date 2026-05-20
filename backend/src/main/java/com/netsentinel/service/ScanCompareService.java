@@ -65,9 +65,9 @@ public class ScanCompareService {
     }
 
     private Map<String, AnalysisReport.Finding> loadFindings(ScanJob job) {
-        if (job.getAiReport() == null) return Map.of();
+        if (job.getAnalysisReport() == null) return Map.of();
         try {
-            AnalysisReport report = objectMapper.readValue(job.getAiReport(), AnalysisReport.class);
+            AnalysisReport report = objectMapper.readValue(job.getAnalysisReport(), AnalysisReport.class);
             Map<String, AnalysisReport.Finding> map = new LinkedHashMap<>();
             for (AnalysisReport.Finding f : report.findings()) {
                 String key = findingKey(f);

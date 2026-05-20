@@ -165,6 +165,71 @@
   &:hover { background: var(--accent-hover); }
 }
 
+.nvd-section {
+  width: 100%;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.nvd-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nvd-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.nvd-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.nvd-input {
+  flex: 1;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color 150ms ease;
+
+  &::placeholder { color: var(--text-muted); }
+  &:focus { border-color: var(--accent); }
+}
+
+.nvd-btn {
+  padding: 6px 12px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 150ms ease, border-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: rgba(84, 84, 88, 0.8);
+  }
+
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
 .btn-ghost-setup {
   width: 100%;
   padding: 8px;
