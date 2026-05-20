@@ -43,6 +43,14 @@ if (-not $kaliInstalled) {
 $wslPath = $InstallDir -replace "\\", "/"
 $wslPath = "/mnt/" + $wslPath.Substring(0,1).ToLower() + $wslPath.Substring(2)
 
+$lxssPath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Lxss"
+$kaliEntry = Get-ChildItem $lxssPath -ErrorAction SilentlyContinue |
+    Where-Object { (Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).DistributionName -match "kali" } |
+    Select-Object -First 1
+if ($kaliEntry) {
+    Set-ItemProperty -Path $kaliEntry.PSPath -Name "DefaultUid" -Value 0 -ErrorAction SilentlyContinue
+}
+
 Write-Status "INSTALLING_TOOLS"
 Write-Output "Installing tools in Kali Linux..."
 wsl -d kali-linux -- bash -c "sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq nmap curl wget openjdk-21-jre-headless gobuster nikto dirb postgresql postgresql-client 2>/dev/null && sudo mkdir -p /usr/share/wordlists && sudo ln -sf /usr/share/dirb/wordlists /usr/share/wordlists/dirb 2>/dev/null || true"

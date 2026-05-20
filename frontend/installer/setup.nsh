@@ -1,9 +1,5 @@
 !macro customInstall
   CreateDirectory "$APPDATA\NetSentinel"
-
-  DetailPrint "Running prerequisite setup (WSL2 + Kali Linux)..."
-  ExecWait 'powershell.exe -ExecutionPolicy Bypass -File "$INSTDIR\resources\installer\setup.ps1" "$INSTDIR"'
-
   FileOpen $0 "$APPDATA\NetSentinel\install-path.txt" w
   FileWrite $0 "$INSTDIR"
   FileClose $0
