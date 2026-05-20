@@ -45,6 +45,11 @@ public class ScanController {
         this.compareService = compareService;
     }
 
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of("status", "ok"));
+    }
+
     @PostMapping("/scan/start")
     public ResponseEntity<?> startScan(@RequestBody ScanRequest request) {
         if (request.target() == null || request.target().isBlank()) {

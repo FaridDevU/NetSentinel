@@ -7,7 +7,7 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'nav.history': 'Historial',
     'nav.assets': 'Dispositivos',
     'nav.compare': 'Comparar',
-    'offline.banner': 'Servicio no disponible — asegurate de que el backend este corriendo en el puerto 8080',
+    'offline.banner': 'Conectando con el servicio, espera un momento...',
     'offline.setup': 'Configurar sistema',
 
     'setup.checking': 'Comprobando requisitos del sistema...',
@@ -187,7 +187,7 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'nav.history': 'History',
     'nav.assets': 'Devices',
     'nav.compare': 'Compare',
-    'offline.banner': 'Service unavailable — make sure the backend is running on port 8080',
+    'offline.banner': 'Connecting to service, please wait...',
     'offline.setup': 'Configure system',
 
     'setup.checking': 'Checking system requirements...',
