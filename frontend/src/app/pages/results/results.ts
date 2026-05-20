@@ -6,7 +6,7 @@ import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
 import { LangService } from '../../services/lang.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
-import { AnalysisFinding, HostDto, ScanResultsResponse, WebFindingDto } from '../../models/scan.models';
+import { AnalysisFinding, FindingStatusMap, HostDto, ScanResultsResponse, WebFindingDto } from '../../models/scan.models';
 
 @Component({
   selector: 'app-results',
@@ -25,6 +25,7 @@ export class ResultsPage implements OnInit, OnDestroy {
   expandedFindings = signal<Set<number>>(new Set());
   showTechnical = signal(false);
   scanLogs = signal<string[]>([]);
+  findingStatuses = signal<FindingStatusMap>({});
 
   private scanId = '';
   private logSub?: Subscription;
@@ -53,6 +54,10 @@ export class ResultsPage implements OnInit, OnDestroy {
         if (res.status === 'PENDING' || res.status === 'RUNNING') {
           this.startLivePolling(id);
         }
+        this.scanService.getFindingStatuses(id).subscribe({
+          next: (s) => this.findingStatuses.set(s),
+          error: () => {},
+        });
       },
       error: () => {
         this.error.set(this.lang.t('results.error.loadFailed'));
@@ -133,6 +138,41 @@ export class ResultsPage implements OnInit, OnDestroy {
   isFindingExpanded(index: number): boolean { return this.expandedFindings().has(index); }
 
   goBack(): void { void this.router.navigate(['/history']); }
+
+  downloadExport(format: 'pdf' | 'json' | 'csv'): void {
+    const url = this.scanService.exportUrl(this.scanId, format);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    a.click();
+  }
+
+  buildFindingKey(finding: AnalysisFinding): string {
+    if (finding.relatedCves.length > 0) {
+      return [...finding.relatedCves].sort().join(',') + '::' + finding.host + '::' + finding.port;
+    }
+    return finding.severity + '::' + finding.host + '::' + finding.port + '::' + finding.service;
+  }
+
+  findingStatus(finding: AnalysisFinding): string {
+    return this.findingStatuses()[this.buildFindingKey(finding)] ?? 'OPEN';
+  }
+
+  cycleStatus(finding: AnalysisFinding): void {
+    const key = this.buildFindingKey(finding);
+    const current = this.findingStatuses()[key] ?? 'OPEN';
+    const cycle: Record<string, string> = {
+      OPEN: 'ACKNOWLEDGED', ACKNOWLEDGED: 'FALSE_POSITIVE', FALSE_POSITIVE: 'RESOLVED', RESOLVED: 'OPEN'
+    };
+    const next = cycle[current] ?? 'OPEN';
+    this.scanService.updateFindingStatus(this.scanId, key, next).subscribe({
+      next: () => {
+        const updated = { ...this.findingStatuses(), [key]: next };
+        this.findingStatuses.set(updated);
+      },
+      error: () => {},
+    });
+  }
   openPorts(host: HostDto): number { return host.ports.filter((p) => p.state === 'open').length; }
   totalCves(host: HostDto): number { return host.ports.reduce((sum, p) => sum + p.cves.length, 0); }
   totalWebFindings(host: HostDto): number { return host.webFindings?.length ?? 0; }

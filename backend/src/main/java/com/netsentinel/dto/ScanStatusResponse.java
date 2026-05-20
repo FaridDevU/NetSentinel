@@ -11,5 +11,7 @@ public record ScanStatusResponse(
         ScanStatus status,
         Instant startedAt,
         Instant completedAt,
-        String errorMessage
+        String errorMessage,
+        String riskLevel,
+        Double riskScore
 ) {}

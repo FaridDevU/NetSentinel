@@ -1,0 +1,185 @@
+.page { padding: 12px 16px; max-width: 900px; }
+.page-header { margin-bottom: 14px; }
+.page-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+.page-subtitle { font-size: 11.5px; color: var(--text-secondary); }
+
+.compare-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.scan-select-group {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.select-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scan-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-primary);
+  padding: 6px 9px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+
+  &:focus { border-color: var(--accent); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  option { background: var(--surface); }
+}
+
+.vs-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.compare-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, opacity 150ms ease;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) { background: var(--accent-hover); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.compare-summary {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.summary-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 18px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  min-width: 80px;
+
+  &.new.has-items { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.06); }
+  &.resolved.has-items { border-color: rgba(34, 197, 94, 0.3); background: rgba(34, 197, 94, 0.06); }
+}
+
+.chip-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+
+  .new.has-items & { color: #ef4444; }
+  .resolved.has-items & { color: #22c55e; }
+  .persistent & { color: var(--text-secondary); }
+}
+
+.chip-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.findings-section { margin-bottom: 12px; }
+
+.findings-header {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &.new { background: rgba(239, 68, 68, 0.08); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+  &.resolved { background: rgba(34, 197, 94, 0.08); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.2); }
+  &.persistent { background: var(--elevated); color: var(--text-secondary); border: 1px solid var(--border); }
+}
+
+.findings-list {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+}
+
+.finding-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-primary);
+
+  &:last-child { border-bottom: none; }
+  &.resolved-item { opacity: 0.7; }
+}
+
+.finding-title { flex: 1; }
+.finding-host { font-size: 11px; color: var(--text-muted); }
+
+.sev-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.critical { background: #ef4444; }
+  &.high     { background: #f59e0b; }
+  &.medium   { background: #eab308; }
+  &.low      { background: #22c55e; }
+  &.info     { background: #0ea5e9; }
+}
+
+.count-badge {
+  font-size: 11px;
+  background: rgba(255,255,255,0.15);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.spinner-sm {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-block { background: rgba(255,69,58,0.07); border: 1px solid rgba(255,69,58,0.22); border-radius: 4px; padding: 8px 12px; font-size: 12px; color: var(--danger); margin-bottom: 12px; }
+.no-findings { font-size: 12.5px; color: var(--text-muted); padding: 16px 0; }

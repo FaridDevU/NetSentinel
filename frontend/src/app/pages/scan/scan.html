@@ -72,6 +72,24 @@
         </div>
       }
 
+      <div class="profile-row">
+        <span class="profile-label">{{ 'scan.profile.label' | t }}</span>
+        <div class="profile-picker">
+          <button [class]="'profile-btn' + (scanProfile() === 'RAPIDO' ? ' active' : '')" type="button" (click)="scanProfile.set('RAPIDO')">
+            {{ 'scan.profile.quick' | t }}
+            <span class="profile-hint">{{ 'scan.profile.quick.hint' | t }}</span>
+          </button>
+          <button [class]="'profile-btn' + (scanProfile() === 'ESTANDAR' ? ' active' : '')" type="button" (click)="scanProfile.set('ESTANDAR')">
+            {{ 'scan.profile.standard' | t }}
+            <span class="profile-hint">{{ 'scan.profile.standard.hint' | t }}</span>
+          </button>
+          <button [class]="'profile-btn' + (scanProfile() === 'COMPLETO' ? ' active' : '')" type="button" (click)="scanProfile.set('COMPLETO')">
+            {{ 'scan.profile.full' | t }}
+            <span class="profile-hint">{{ 'scan.profile.full.hint' | t }}</span>
+          </button>
+        </div>
+      </div>
+
       <div class="form-actions-big">
         <button
           class="btn-scan"

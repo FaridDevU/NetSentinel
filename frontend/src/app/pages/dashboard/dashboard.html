@@ -1,0 +1,90 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">{{ 'dashboard.title' | t }}</h1>
+    <p class="page-subtitle">{{ 'dashboard.subtitle' | t }}</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>{{ 'dashboard.loading' | t }}</span>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-block">{{ error() }}</div>
+  }
+
+  @if (!loading() && data()) {
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-value">{{ data()!.totalScans }}</span>
+        <span class="stat-label">{{ 'dashboard.stat.totalScans' | t }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value completed">{{ data()!.completedScans }}</span>
+        <span class="stat-label">{{ 'dashboard.stat.completed' | t }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ data()!.totalHosts }}</span>
+        <span class="stat-label">{{ 'dashboard.stat.hosts' | t }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value" [class.danger]="data()!.totalCves > 0">{{ data()!.totalCves }}</span>
+        <span class="stat-label">{{ 'dashboard.stat.cves' | t }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value accent">{{ data()!.averageRiskScore.toFixed(1) }}</span>
+        <span class="stat-label">{{ 'dashboard.stat.avgRisk' | t }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value" [class.warn]="data()!.activeScans > 0">{{ data()!.activeScans }}</span>
+        <span class="stat-label">{{ 'dashboard.stat.active' | t }}</span>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-label">{{ 'dashboard.cvesByLevel' | t }}</div>
+      <div class="sev-bars">
+        @for (bar of severityBars(); track bar.label) {
+          <div class="sev-bar-row">
+            <span class="sev-bar-label" [class]="bar.cls">{{ 'severity.' + bar.label.toLowerCase() | t }}</span>
+            <div class="sev-bar-track">
+              <div [class]="'sev-bar-fill ' + bar.cls" [style.width.%]="bar.pct"></div>
+            </div>
+            <span class="sev-bar-count">{{ bar.count }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-label">{{ 'dashboard.recentScans' | t }}</div>
+      @if (data()!.recentScans.length === 0) {
+        <p class="empty-msg">{{ 'dashboard.noScans' | t }}</p>
+      } @else {
+        <div class="recent-list">
+          @for (scan of data()!.recentScans; track scan.id) {
+            <div class="recent-item" (click)="openResults(scan.id)" [class.clickable]="scan.status === 'COMPLETED'">
+              <div class="recent-left">
+                <span [class]="'status-dot ' + statusClass(scan.status)"></span>
+                <div class="recent-info">
+                  <span class="recent-target">{{ scan.target }}</span>
+                  <span class="recent-meta">{{ statusKey(scan.status) | t }} · {{ scan.hostCount }} {{ 'dashboard.hosts' | t }}</span>
+                </div>
+              </div>
+              <div class="recent-right">
+                @if (scan.riskLevel) {
+                  <span [class]="'risk-chip ' + riskClass(scan.riskLevel)">{{ 'severity.' + riskClass(scan.riskLevel) | t }}</span>
+                }
+                @if (scan.riskScore !== null) {
+                  <span class="risk-score">{{ scan.riskScore.toFixed(1) }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

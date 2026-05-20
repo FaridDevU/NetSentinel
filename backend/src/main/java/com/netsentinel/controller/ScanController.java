@@ -2,12 +2,17 @@ package com.netsentinel.controller;
 
 import com.netsentinel.dto.ErrorResponse;
 import com.netsentinel.dto.PagedResponse;
+import com.netsentinel.dto.ScanCompareResponse;
 import com.netsentinel.dto.ScanRequest;
 import com.netsentinel.dto.ScanResultsResponse;
 import com.netsentinel.dto.ScanStatusResponse;
 import com.netsentinel.entity.ScanJob;
 import com.netsentinel.enums.ScanStatus;
+import com.netsentinel.service.ExportService;
+import com.netsentinel.service.ScanCompareService;
 import com.netsentinel.service.ScanService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,9 +36,13 @@ public class ScanController {
             java.util.regex.Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9.\\-:/\\[\\]]{0,99}$");
 
     private final ScanService scanService;
+    private final ExportService exportService;
+    private final ScanCompareService compareService;
 
-    public ScanController(ScanService scanService) {
+    public ScanController(ScanService scanService, ExportService exportService, ScanCompareService compareService) {
         this.scanService = scanService;
+        this.exportService = exportService;
+        this.compareService = compareService;
     }
 
     @PostMapping("/scan/start")
@@ -103,6 +112,64 @@ public class ScanController {
     @GetMapping("/scan/{id}/logs")
     public ResponseEntity<?> getScanLogs(@PathVariable UUID id) {
         return ResponseEntity.ok(Map.of("lines", scanService.getLogs(id)));
+    }
+
+    @GetMapping(value = "/scan/{id}/export/pdf", produces = "application/pdf")
+    public ResponseEntity<?> exportPdf(@PathVariable UUID id) {
+        var result = scanService.getResults(id);
+        if (result.isEmpty()) return ResponseEntity.status(404).body(new ErrorResponse("Scan no encontrado: " + id));
+        ScanResultsResponse scan = result.get();
+        try {
+            byte[] pdf = exportService.generatePdf(scan, scan.analysis());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"netsentinel-report-" + id + ".pdf\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdf);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(new ErrorResponse("Error generando PDF: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping(value = "/scan/{id}/export/json", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> exportJson(@PathVariable UUID id) {
+        var result = scanService.getResults(id);
+        if (result.isEmpty()) return ResponseEntity.status(404).body(new ErrorResponse("Scan no encontrado: " + id));
+        try {
+            byte[] json = exportService.generateJson(result.get());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"netsentinel-report-" + id + ".json\"")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(json);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(new ErrorResponse("Error generando JSON: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping(value = "/scan/{id}/export/csv", produces = "text/csv")
+    public ResponseEntity<?> exportCsv(@PathVariable UUID id) {
+        var result = scanService.getResults(id);
+        if (result.isEmpty()) return ResponseEntity.status(404).body(new ErrorResponse("Scan no encontrado: " + id));
+        ScanResultsResponse scan = result.get();
+        byte[] csv = exportService.generateCsv(scan, scan.analysis());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"netsentinel-report-" + id + ".csv\"")
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .body(csv);
+    }
+
+    @GetMapping("/scan/compare")
+    public ResponseEntity<?> compareScan(
+            @RequestParam UUID a,
+            @RequestParam UUID b) {
+        if (a.equals(b)) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Los dos IDs deben ser distintos"));
+        }
+        try {
+            ScanCompareResponse compare = compareService.compare(a, b);
+            return ResponseEntity.ok(compare);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(new ErrorResponse(e.getMessage()));
+        }
     }
 
     @GetMapping("/network/local")

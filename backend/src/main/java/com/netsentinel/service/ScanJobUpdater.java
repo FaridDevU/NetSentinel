@@ -65,9 +65,11 @@ public class ScanJobUpdater {
     }
 
     @Transactional
-    public void saveAnalysis(UUID scanJobId, String analysisJson) {
+    public void saveAnalysis(UUID scanJobId, String analysisJson, String riskLevel, double riskScore) {
         scanJobRepository.findById(scanJobId).ifPresent(job -> {
             job.setAiReport(analysisJson);
+            job.setRiskLevel(riskLevel);
+            job.setRiskScore(riskScore);
             scanJobRepository.save(job);
         });
     }

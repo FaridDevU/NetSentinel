@@ -21,9 +21,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -74,7 +71,6 @@ public class ScanService {
         this.objectMapper = objectMapper;
     }
 
-    @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void recoverStuckScans() {
         int recovered = scanJobRepository.markStuckJobsAsFailed(Instant.now());
@@ -164,7 +160,7 @@ public class ScanService {
         try {
             AnalysisReport report = analysisService.analyze(job.getTarget(), hosts);
             String reportJson = objectMapper.writeValueAsString(report);
-            scanJobUpdater.saveAnalysis(scanJobId, reportJson);
+            scanJobUpdater.saveAnalysis(scanJobId, reportJson, report.riskLevel(), report.riskScore());
             log.info("Analysis saved for scan {} — risk: {}", scanJobId, report.riskLevel());
 
             int totalCves = hosts.stream()
@@ -289,7 +285,9 @@ public class ScanService {
                 job.getStatus(),
                 job.getStartedAt(),
                 job.getCompletedAt(),
-                job.getErrorMessage()
+                job.getErrorMessage(),
+                job.getRiskLevel(),
+                job.getRiskScore()
         );
     }
 

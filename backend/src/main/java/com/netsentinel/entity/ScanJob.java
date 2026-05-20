@@ -51,6 +51,12 @@ public class ScanJob {
     @Column(name = "scan_logs", columnDefinition = "TEXT")
     private String scanLogs;
 
+    @Column
+    private String riskLevel;
+
+    @Column
+    private Double riskScore;
+
     @OneToMany(mappedBy = "scanJob", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NetworkHost> hosts = new ArrayList<>();
 
