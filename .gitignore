@@ -26,6 +26,7 @@ backend/*.jar
 # Rust
 sandbox/target/
 Cargo.lock
+frontend/installer/netsentinel-sandbox
 
 # OS
 .DS_Store
