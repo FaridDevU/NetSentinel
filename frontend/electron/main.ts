@@ -209,7 +209,7 @@ async function createWindow(): Promise<void> {
   });
 
   const distIndex = join(__dirname, '../dist/frontend/browser/index.html');
-  if (existsSync(distIndex)) {
+  if (process.env['NODE_ENV'] !== 'development' && existsSync(distIndex)) {
     mainWindow.loadFile(distIndex);
   } else {
     mainWindow.loadURL('http://localhost:4200');
