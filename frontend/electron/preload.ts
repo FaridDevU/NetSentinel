@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld("electron", {
   startBackend: () => ipcRenderer.invoke('backend:start'),
   getLocalNetworks: () => ipcRenderer.invoke('network:local'),
   saveNvdKey: (key: string) => ipcRenderer.invoke('config:saveNvdKey', key),
+  reboot: () => ipcRenderer.invoke('system:reboot'),
 });

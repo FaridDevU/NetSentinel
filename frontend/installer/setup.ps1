@@ -43,9 +43,11 @@ if (-not $kaliInstalled) {
 $wslPath = $InstallDir -replace "\\", "/"
 $wslPath = "/mnt/" + $wslPath.Substring(0,1).ToLower() + $wslPath.Substring(2)
 
+Write-Status "INSTALLING_TOOLS"
 Write-Output "Installing tools in Kali Linux..."
 wsl -d kali-linux -- bash -c "sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq nmap curl wget openjdk-21-jre-headless gobuster nikto dirb postgresql postgresql-client 2>/dev/null && sudo mkdir -p /usr/share/wordlists && sudo ln -sf /usr/share/dirb/wordlists /usr/share/wordlists/dirb 2>/dev/null || true"
 
+Write-Status "CONFIGURING_DB"
 Write-Output "Configuring PostgreSQL..."
 wsl -d kali-linux -- bash -c "
     sudo service postgresql start 2>/dev/null
@@ -70,6 +72,7 @@ wsl -d kali-linux -- bash -c "
     echo PostgreSQL configured
 " 2>&1
 
+Write-Status "INSTALLING_BACKEND"
 Write-Output "Installing backend..."
 $jarSource = "$wslPath/resources/backend.jar"
 wsl -d kali-linux -- bash -c "
@@ -82,6 +85,7 @@ wsl -d kali-linux -- bash -c "
     fi
 " 2>&1
 
+Write-Status "INSTALLING_SANDBOX"
 Write-Output "Installing sandbox..."
 $sandboxSource = "$wslPath/resources/installer/netsentinel-sandbox"
 wsl -d kali-linux -- bash -c "
@@ -96,6 +100,7 @@ wsl -d kali-linux -- bash -c "
     fi
 " 2>&1
 
+Write-Status "CREATING_SCRIPTS"
 Write-Output "Creating startup script..."
 wsl -d kali-linux -- bash -c "
     mkdir -p ~/.netsentinel

@@ -8,7 +8,7 @@ interface DepResult {
   detail: string;
 }
 
-type SetupState = 'checking' | 'missing' | 'installing' | 'ready';
+type SetupState = 'checking' | 'missing' | 'installing' | 'ready' | 'needs_reboot' | 'error';
 
 @Component({
   selector: 'app-setup',
@@ -21,6 +21,7 @@ export class SetupPage implements OnInit, OnDestroy {
 
   state = signal<SetupState>('checking');
   deps = signal<DepResult[]>([]);
+  statusMsg = signal('');
   nvdKey = '';
   nvdSaved = signal(false);
 
@@ -50,6 +51,7 @@ export class SetupPage implements OnInit, OnDestroy {
   }
 
   install(): void {
+    this.statusMsg.set('');
     this.state.set('installing');
     this.electron.runSetup();
     this.pollTimer = setInterval(() => this.pollStatus(), 3000);
@@ -57,16 +59,40 @@ export class SetupPage implements OnInit, OnDestroy {
 
   private pollStatus(): void {
     this.electron.getSetupStatus().then((status: string) => {
-      if (status === 'READY') {
+      const progress: Record<string, string> = {
+        'INSTALLING_TOOLS': 'setup.progress.tools',
+        'CONFIGURING_DB': 'setup.progress.db',
+        'INSTALLING_BACKEND': 'setup.progress.backend',
+        'INSTALLING_SANDBOX': 'setup.progress.sandbox',
+        'CREATING_SCRIPTS': 'setup.progress.scripts',
+      };
+      if (progress[status]) {
+        this.statusMsg.set(progress[status]);
+      } else if (status === 'READY') {
         this.stopPolling();
         this.electron.startBackend();
         this.runCheck();
+      } else if (status === 'NEEDS_REBOOT') {
+        this.stopPolling();
+        this.state.set('needs_reboot');
+      } else if (status === 'KALI_INSTALL_FAILED') {
+        this.stopPolling();
+        this.state.set('error');
       }
     }).catch(() => {});
   }
 
   verifyNow(): void {
     this.pollStatus();
+  }
+
+  reboot(): void {
+    this.electron.reboot();
+  }
+
+  retry(): void {
+    this.statusMsg.set('');
+    this.runCheck();
   }
 
   private stopPolling(): void {
