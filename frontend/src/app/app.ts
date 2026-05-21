@@ -22,19 +22,43 @@ export class App implements OnInit {
     const e = (window as any).electron;
     if (!e?.checkDepsQuick) {
       this.checking.set(false);
+      this.expandWindow();
       return;
     }
     e.checkDepsQuick()
       .then((r: any) => {
         this.checking.set(false);
-        if (!r?.wsl || !r?.kali) {
+        const welcomed = localStorage.getItem('ns_welcomed') === '1';
+        if (!r?.wsl || !r?.kali || !welcomed) {
           this.showSetup.set(true);
+        } else {
+          this.expandWindow();
         }
       })
-      .catch(() => this.checking.set(false));
+      .catch(() => {
+        this.checking.set(false);
+        this.showSetup.set(true);
+      });
+  }
+
+  onSetupDone(): void {
+    this.expandWindow();
+    this.showSetup.set(false);
   }
 
   openSetup(): void {
     this.showSetup.set(true);
+  }
+
+  minimize(): void {
+    (window as any).electron?.minimizeWindow?.();
+  }
+
+  closeApp(): void {
+    (window as any).electron?.closeWindow?.();
+  }
+
+  private expandWindow(): void {
+    (window as any).electron?.expandWindow?.();
   }
 }

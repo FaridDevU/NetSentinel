@@ -110,11 +110,16 @@ export class SetupPage implements OnInit, OnDestroy {
     }).catch(() => {});
   }
 
+  closeApp(): void {
+    (window as any).electron?.closeWindow?.();
+  }
+
   skip(): void {
     this.done.emit();
   }
 
   continue(): void {
+    localStorage.setItem('ns_welcomed', '1');
     this.done.emit();
   }
 }
