@@ -147,6 +147,17 @@ function setupIpcHandlers(): void {
     spawn('shutdown.exe', ['/r', '/t', '10'], { stdio: 'ignore' });
   });
 
+  ipcMain.handle('window:expand', () => {
+    if (!mainWindow) return;
+    mainWindow.setResizable(true);
+    mainWindow.setMinimumSize(900, 560);
+    mainWindow.setSize(1200, 680);
+    mainWindow.center();
+  });
+
+  ipcMain.handle('window:minimize', () => mainWindow?.minimize());
+  ipcMain.handle('window:close', () => mainWindow?.close());
+
   ipcMain.handle('backend:start', () => {
     startBackend();
   });
@@ -168,7 +179,7 @@ function setupIpcHandlers(): void {
 }
 
 function startBackend(): void {
-  if (process.env['NODE_ENV'] === 'development') return;
+  if (!app.isPackaged) return;
   if (backendProcess && backendProcess.exitCode === null) return;
 
   backendProcess = spawn('wsl', [
@@ -184,17 +195,21 @@ function startBackend(): void {
 }
 
 function resolveIcon(): Electron.NativeImage {
-  const icoPath =
-    process.env['NODE_ENV'] === 'development'
-      ? join(__dirname, '../public/icon.ico')
-      : join(process.resourcesPath, 'icon.ico');
-  if (existsSync(icoPath)) return nativeImage.createFromPath(icoPath);
-
-  const pngPath =
-    process.env['NODE_ENV'] === 'development'
-      ? join(__dirname, '../public/icon.png')
-      : join(process.resourcesPath, 'icon.png');
-  return nativeImage.createFromPath(pngPath);
+  const candidates = app.isPackaged
+    ? [
+        join(process.resourcesPath, 'icon.ico'),
+        join(process.resourcesPath, 'icon.png'),
+        join(__dirname, '../public/icon.ico'),
+        join(__dirname, '../public/icon.png'),
+      ]
+    : [
+        join(__dirname, '../public/icon.ico'),
+        join(__dirname, '../public/icon.png'),
+      ];
+  for (const p of candidates) {
+    if (existsSync(p)) return nativeImage.createFromPath(p);
+  }
+  return nativeImage.createEmpty();
 }
 
 async function createWindow(): Promise<void> {
@@ -203,11 +218,15 @@ async function createWindow(): Promise<void> {
   Menu.setApplicationMenu(null);
 
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 680,
-    minWidth: 900,
-    minHeight: 560,
+    width: 420,
+    height: 460,
+    minWidth: 420,
+    minHeight: 460,
+    resizable: false,
+    frame: false,
+    transparent: false,
     backgroundColor: '#1e1e1e',
+    hasShadow: true,
     autoHideMenuBar: true,
     icon,
     show: false,
@@ -225,8 +244,27 @@ async function createWindow(): Promise<void> {
     mainWindow?.show();
   });
 
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
+    if (input.type !== 'keyDown') return;
+    if (input.key === 'F12') {
+      mainWindow?.webContents.openDevTools({ mode: 'detach' });
+      return;
+    }
+    if (!input.control) return;
+    const wc = mainWindow?.webContents;
+    if (!wc) return;
+    if (input.type !== 'keyDown') return;
+    if (input.key === '=' || input.key === '+') {
+      wc.setZoomFactor(Math.min(wc.getZoomFactor() + 0.1, 2.5));
+    } else if (input.key === '-') {
+      wc.setZoomFactor(Math.max(wc.getZoomFactor() - 0.1, 0.5));
+    } else if (input.key === '0') {
+      wc.setZoomFactor(1.0);
+    }
+  });
+
   const distIndex = join(__dirname, '../dist/frontend/browser/index.html');
-  if (process.env['NODE_ENV'] !== 'development' && existsSync(distIndex)) {
+  if (app.isPackaged && existsSync(distIndex)) {
     mainWindow.loadFile(distIndex);
   } else {
     mainWindow.loadURL('http://localhost:4200');

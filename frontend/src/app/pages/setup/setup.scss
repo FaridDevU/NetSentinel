@@ -2,37 +2,59 @@
   position: fixed;
   inset: 0;
   background: var(--bg);
+  border-radius: 12px;
+  overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   z-index: 100;
 }
 
+.win-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background 150ms ease, color 150ms ease;
+
+  &:hover {
+    background: rgba(255, 69, 58, 0.15);
+    color: var(--danger);
+  }
+}
+
 .setup-card {
-  width: 420px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 28px 32px 32px;
+  width: 100%;
+  padding: 20px 24px 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 14px;
 }
 
 .setup-brand {
   display: flex;
   align-items: center;
   gap: 10px;
+  -webkit-app-region: drag;
 }
 
 .setup-icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
 }
 
 .setup-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -41,12 +63,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   text-align: center;
+  flex: 1;
 }
 
 .setup-title {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
   text-align: left;
@@ -54,16 +77,16 @@
 }
 
 .setup-msg {
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.55;
   text-align: center;
 }
 
 .setup-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.55;
   text-align: left;
   width: 100%;
 }
@@ -72,14 +95,14 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .dep-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 6px 10px;
   border-radius: 5px;
   background: var(--elevated);
 }
@@ -106,12 +129,12 @@
 
 .dep-label {
   flex: 1;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text-primary);
 }
 
 .dep-detail {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 
   &.ok { color: var(--success); }
@@ -119,8 +142,8 @@
 }
 
 .check-circle {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: rgba(48, 209, 88, 0.12);
   border: 1.5px solid rgba(48, 209, 88, 0.3);
@@ -131,8 +154,8 @@
 }
 
 .spinner-lg {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border: 2.5px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
@@ -146,18 +169,18 @@
 .setup-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
 }
 
 .btn-primary-setup {
   width: 100%;
-  padding: 9px;
+  padding: 10px;
   background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background 150ms ease;
@@ -167,8 +190,8 @@
 
 .nvd-section {
   width: 100%;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
+  border-top: 1px solid rgba(84, 84, 88, 0.3);
+  padding-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -176,15 +199,15 @@
 }
 
 .nvd-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .nvd-hint {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-muted);
   line-height: 1.5;
 }
@@ -201,7 +224,7 @@
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-primary);
   font-family: 'JetBrains Mono', monospace;
   outline: none;
@@ -216,7 +239,7 @@
   background: var(--elevated);
   border: 1px solid var(--border);
   border-radius: 5px;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
@@ -237,7 +260,7 @@
   color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 12.5px;
+  font-size: 13px;
   cursor: pointer;
   transition: color 150ms ease, border-color 150ms ease;
 
