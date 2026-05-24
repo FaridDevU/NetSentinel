@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, from } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
+  AgentChatRequest,
+  AgentSseEvent,
   AssetDto,
   DashboardResponse,
   FindingStatusMap,
@@ -82,5 +84,52 @@ export class ScanService {
 
   exportUrl(scanId: string, format: 'pdf' | 'json' | 'csv'): string {
     return `${this.base}/scan/${scanId}/export/${format}`;
+  }
+
+  streamAgentChat(request: AgentChatRequest): Observable<AgentSseEvent> {
+    const base = this.base;
+    return new Observable(observer => {
+      const controller = new AbortController();
+      fetch(`${base}/agent/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      }).then(response => {
+        if (!response.ok || !response.body) {
+          observer.error(new Error(`HTTP ${response.status}`));
+          return;
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        const pump = (): void => {
+          reader.read().then(({ done, value }) => {
+            if (done) { observer.complete(); return; }
+            buffer += decoder.decode(value, { stream: true });
+            const chunks = buffer.split('\n\n');
+            buffer = chunks.pop()!;
+            for (const chunk of chunks) {
+              if (!chunk.trim()) continue;
+              let eventType = '';
+              let data = '';
+              for (const line of chunk.split('\n')) {
+                if (line.startsWith('event:')) eventType = line.slice(6).trim();
+                else if (line.startsWith('data:')) data = line.slice(5).trim();
+              }
+              if (eventType && data) {
+                try {
+                  const parsed = JSON.parse(data);
+                  observer.next({ type: eventType as AgentSseEvent['type'], ...parsed });
+                } catch { /* skip malformed */ }
+              }
+            }
+            pump();
+          }).catch(err => observer.error(err));
+        };
+        pump();
+      }).catch(err => observer.error(err));
+      return () => controller.abort();
+    });
   }
 }
