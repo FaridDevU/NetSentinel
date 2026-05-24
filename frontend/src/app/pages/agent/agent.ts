@@ -95,6 +95,7 @@ export class AgentPage implements OnDestroy {
       ...msgs,
       { role: 'user', text, toolCalls: [], isStreaming: false },
     ]);
+    this.scrollToBottom();
 
     const assistantIndex = this.messages().length;
     this.messages.update(msgs => [

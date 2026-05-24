@@ -212,7 +212,7 @@ export class ScanPage implements OnInit, OnDestroy {
               error: () => {},
             });
             this.stopTimers();
-            this.router.navigate(['/results', id]);
+            void this.router.navigate(['/results', id]);
           } else if (status.status === 'FAILED' || status.status === 'CANCELLED') {
             this.stopTimers();
             this.scanning.set(false);

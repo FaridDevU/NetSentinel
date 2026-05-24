@@ -121,7 +121,7 @@ export class ScanService {
                 try {
                   const parsed = JSON.parse(data);
                   observer.next({ type: eventType as AgentSseEvent['type'], ...parsed });
-                } catch { /* skip malformed */ }
+                } catch { }
               }
             }
             pump();
