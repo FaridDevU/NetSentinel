@@ -7,6 +7,7 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'nav.history': 'Historial',
     'nav.assets': 'Dispositivos',
     'nav.compare': 'Comparar',
+    'nav.agent': 'Asistente IA',
     'offline.banner': 'Conectando con el servicio, espera un momento...',
     'offline.setup': 'Configurar sistema',
 
@@ -191,6 +192,20 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'assets.col.risk': 'Riesgo',
     'assets.col.lastScan': 'Ultimo analisis',
     'assets.view': 'Ver',
+
+    'agent.title': 'Asistente de Seguridad',
+    'agent.key.change': 'Cambiar clave',
+    'agent.key.setup.title': 'Conectar con Claude',
+    'agent.key.setup.body': 'Ingresa tu API key de Anthropic para usar el asistente de seguridad interactivo.',
+    'agent.key.setup.placeholder': 'sk-ant-...',
+    'agent.key.setup.connect': 'Conectar',
+    'agent.empty.title': 'Hola, soy NetSentinel',
+    'agent.empty.body': 'Puedo analizar tu red, detectar vulnerabilidades y explicar los resultados en lenguaje claro.',
+    'agent.suggest.scan': 'Analiza mi red',
+    'agent.suggest.history': 'Ultimo analisis',
+    'agent.suggest.vulns': 'Dispositivos vulnerables',
+    'agent.input.placeholder': 'Escribe tu pregunta...',
+    'agent.error.connection': 'Error de conexion. Verifica que el sistema este activo.',
   },
   en: {
     'nav.newScan': 'Scan',
@@ -198,6 +213,7 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'nav.history': 'History',
     'nav.assets': 'Devices',
     'nav.compare': 'Compare',
+    'nav.agent': 'AI Assistant',
     'offline.banner': 'Connecting to service, please wait...',
     'offline.setup': 'Configure system',
 
@@ -382,6 +398,20 @@ const TR: Record<'es' | 'en', Record<string, string>> = {
     'assets.col.risk': 'Risk',
     'assets.col.lastScan': 'Last scan',
     'assets.view': 'View',
+
+    'agent.title': 'Security Assistant',
+    'agent.key.change': 'Change key',
+    'agent.key.setup.title': 'Connect to Claude',
+    'agent.key.setup.body': 'Enter your Anthropic API key to use the interactive security assistant.',
+    'agent.key.setup.placeholder': 'sk-ant-...',
+    'agent.key.setup.connect': 'Connect',
+    'agent.empty.title': 'Hi, I am NetSentinel',
+    'agent.empty.body': 'I can scan your network, detect vulnerabilities, and explain results in plain language.',
+    'agent.suggest.scan': 'Scan my network',
+    'agent.suggest.history': 'Last scan',
+    'agent.suggest.vulns': 'Vulnerable devices',
+    'agent.input.placeholder': 'Type your question...',
+    'agent.error.connection': 'Connection error. Make sure the system is running.',
   },
 };
 

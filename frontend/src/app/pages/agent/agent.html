@@ -1,0 +1,112 @@
+@if (showKeySetup()) {
+  <div class="key-setup">
+    <div class="key-card">
+      <div class="key-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="15" r="3"/>
+          <path d="M11 15h10M18 12v3"/>
+        </svg>
+      </div>
+      <h2 class="key-title">{{ 'agent.key.setup.title' | t }}</h2>
+      <p class="key-body">{{ 'agent.key.setup.body' | t }}</p>
+      <div class="key-form">
+        <input
+          class="key-input"
+          type="password"
+          [(ngModel)]="keyInput"
+          [placeholder]="'agent.key.setup.placeholder' | t"
+          (keydown.enter)="saveKey()"
+        />
+        <button class="key-btn" (click)="saveKey()" [disabled]="!keyInput.trim()">
+          {{ 'agent.key.setup.connect' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="chat-shell">
+    <div class="chat-header">
+      <span class="chat-title">{{ 'agent.title' | t }}</span>
+      <button class="key-reset-btn" (click)="resetKey()">{{ 'agent.key.change' | t }}</button>
+    </div>
+
+    <div class="messages" #messagesRef>
+      @if (messages().length === 0) {
+        <div class="empty-state">
+          <div class="empty-avatar">NS</div>
+          <h3 class="empty-title">{{ 'agent.empty.title' | t }}</h3>
+          <p class="empty-body">{{ 'agent.empty.body' | t }}</p>
+          <div class="suggestions">
+            <button class="suggestion-btn" (click)="suggest('agent.suggest.scan' | t)">{{ 'agent.suggest.scan' | t }}</button>
+            <button class="suggestion-btn" (click)="suggest('agent.suggest.history' | t)">{{ 'agent.suggest.history' | t }}</button>
+            <button class="suggestion-btn" (click)="suggest('agent.suggest.vulns' | t)">{{ 'agent.suggest.vulns' | t }}</button>
+          </div>
+        </div>
+      }
+
+      @for (msg of messages(); track $index) {
+        <div class="message" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+          @if (msg.role === 'assistant') {
+            <div class="avatar assistant-avatar">NS</div>
+          }
+          <div class="bubble">
+            @if (msg.toolCalls.length > 0) {
+              <div class="tool-calls">
+                @for (tc of msg.toolCalls; track $index) {
+                  <div class="tool-call" [class.done]="tc.done">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                      <path d="M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                    </svg>
+                    <span class="tool-name">{{ toolLabel(tc.name) }}</span>
+                    @if (tc.done) {
+                      <svg class="tool-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            @if (msg.text) {
+              <p class="bubble-text">{{ msg.text }}</p>
+            }
+            @if (msg.isStreaming && !msg.text) {
+              <div class="typing">
+                <span></span><span></span><span></span>
+              </div>
+            }
+            @if (msg.isStreaming && msg.text) {
+              <span class="cursor">|</span>
+            }
+          </div>
+          @if (msg.role === 'user') {
+            <div class="avatar user-avatar">TU</div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="input-area">
+      <textarea
+        class="chat-input"
+        [(ngModel)]="inputText"
+        (keydown)="onEnter($event)"
+        [placeholder]="'agent.input.placeholder' | t"
+        [disabled]="streaming()"
+        rows="1"
+      ></textarea>
+      <button class="send-btn" (click)="send()" [disabled]="streaming() || !inputText.trim()">
+        @if (streaming()) {
+          <div class="sending-dots"><span></span><span></span><span></span></div>
+        } @else {
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        }
+      </button>
+    </div>
+  </div>
+}

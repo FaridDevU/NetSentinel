@@ -170,3 +170,22 @@ export interface ComparedFinding {
 }
 
 export type FindingStatusMap = Record<string, string>;
+
+export interface AgentChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AgentSseEvent {
+  type: 'text' | 'tool_use' | 'tool_result' | 'done' | 'error';
+  content?: string;
+  name?: string;
+  input?: unknown;
+  result?: string;
+  message?: string;
+}
+
+export interface AgentChatRequest {
+  apiKey: string;
+  messages: AgentChatMessage[];
+}

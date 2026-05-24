@@ -9,6 +9,7 @@ import com.netsentinel.dto.ScanStatusResponse;
 import com.netsentinel.entity.ScanJob;
 import com.netsentinel.enums.ScanStatus;
 import com.netsentinel.service.ExportService;
+import com.netsentinel.service.NetworkService;
 import com.netsentinel.service.ScanCompareService;
 import com.netsentinel.service.ScanService;
 import org.springframework.http.HttpHeaders;
@@ -16,12 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.Inet4Address;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,11 +33,14 @@ public class ScanController {
     private final ScanService scanService;
     private final ExportService exportService;
     private final ScanCompareService compareService;
+    private final NetworkService networkService;
 
-    public ScanController(ScanService scanService, ExportService exportService, ScanCompareService compareService) {
+    public ScanController(ScanService scanService, ExportService exportService,
+                          ScanCompareService compareService, NetworkService networkService) {
         this.scanService = scanService;
         this.exportService = exportService;
         this.compareService = compareService;
+        this.networkService = networkService;
     }
 
     @GetMapping("/health")
@@ -180,52 +178,9 @@ public class ScanController {
     @GetMapping("/network/local")
     public ResponseEntity<?> getLocalNetworks() {
         try {
-            List<Map<String, String>> result = new ArrayList<>();
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface ni = interfaces.nextElement();
-                if (!ni.isUp() || ni.isLoopback()) continue;
-
-                String displayName = ni.getDisplayName().toLowerCase();
-                if (displayName.contains("hyper-v") || displayName.contains("wsl")
-                        || displayName.contains("virtual") || displayName.contains("tunnel")
-                        || displayName.contains("loopback") || displayName.contains("pseudo")) {
-                    continue;
-                }
-
-                for (InterfaceAddress addr : ni.getInterfaceAddresses()) {
-                    if (!(addr.getAddress() instanceof Inet4Address)) continue;
-                    String ip = addr.getAddress().getHostAddress();
-                    if (ip.startsWith("169.254")) continue;
-
-                    int prefixLen = addr.getNetworkPrefixLength();
-                    String subnet = calculateSubnet(ip, prefixLen);
-
-                    Map<String, String> entry = new LinkedHashMap<>();
-                    entry.put("name", ni.getDisplayName());
-                    entry.put("ip", ip);
-                    entry.put("subnet", subnet + "/" + prefixLen);
-                    result.add(entry);
-                }
-            }
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(networkService.getLocalNetworks());
         } catch (Exception e) {
             return ResponseEntity.status(500).body(new ErrorResponse("Failed to detect network interfaces"));
         }
-    }
-
-    private String calculateSubnet(String ip, int prefixLen) {
-        String[] parts = ip.split("\\.");
-        int ipInt = (Integer.parseInt(parts[0]) << 24)
-                  | (Integer.parseInt(parts[1]) << 16)
-                  | (Integer.parseInt(parts[2]) << 8)
-                  | Integer.parseInt(parts[3]);
-        int mask = prefixLen == 0 ? 0 : (0xFFFFFFFF << (32 - prefixLen));
-        int network = ipInt & mask;
-        return ((network >> 24) & 0xFF) + "."
-             + ((network >> 16) & 0xFF) + "."
-             + ((network >> 8) & 0xFF) + "."
-             + (network & 0xFF);
     }
 }
