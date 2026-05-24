@@ -253,7 +253,6 @@ async function createWindow(): Promise<void> {
     if (!input.control) return;
     const wc = mainWindow?.webContents;
     if (!wc) return;
-    if (input.type !== 'keyDown') return;
     if (input.key === '=' || input.key === '+') {
       wc.setZoomFactor(Math.min(wc.getZoomFactor() + 0.1, 2.5));
     } else if (input.key === '-') {

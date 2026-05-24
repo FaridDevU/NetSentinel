@@ -9,6 +9,7 @@ import com.netsentinel.dto.ScanStatusResponse;
 import com.netsentinel.dto.PagedResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -74,7 +75,7 @@ public class AgentService {
                         .uri(CLAUDE_API_URL)
                         .header("x-api-key", request.apiKey())
                         .header("anthropic-version", "2023-06-01")
-                        .header("content-type", "application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .body(requestBody)
                         .retrieve()
                         .body(String.class);
