@@ -1,19 +1,29 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { NgStyle } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { BackendStatusService } from './services/backend-status.service';
 import { LangService } from './services/lang.service';
+import { TutorialService } from './services/tutorial.service';
 import { TranslatePipe } from './pipes/translate.pipe';
 import { SetupPage } from './pages/setup/setup';
 
+interface TourArrowLine {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, SetupPage],
+  imports: [NgStyle, RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, SetupPage],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
   readonly offline = inject(BackendStatusService).offline;
   readonly lang = inject(LangService);
+  readonly tutorial = inject(TutorialService);
 
   checking = signal(true);
   showSetup = signal(false);
@@ -56,6 +66,28 @@ export class App implements OnInit {
 
   closeApp(): void {
     (window as any).electron?.closeWindow?.();
+  }
+
+  spotlightStyle(): Record<string, string> {
+    const rect = this.tutorial.spotlight();
+    if (!rect) return {};
+    return {
+      top: `${rect.top}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+    };
+  }
+
+  arrowLine(): TourArrowLine | null {
+    const rect = this.tutorial.spotlight();
+    if (!rect) return null;
+    return {
+      x1: window.innerWidth - 330,
+      y1: window.innerHeight - 178,
+      x2: rect.left + rect.width / 2,
+      y2: rect.top + rect.height / 2,
+    };
   }
 
   private expandWindow(): void {

@@ -30,4 +30,12 @@ export const routes: Routes = [
     path: 'agent',
     loadComponent: () => import('./pages/agent/agent').then((m) => m.AgentPage),
   },
+  {
+    path: 'tutorial',
+    loadComponent: () => import('./pages/tutorial/tutorial').then((m) => m.TutorialPage),
+  },
+  {
+    path: 'credits',
+    loadComponent: () => import('./pages/credits/credits').then((m) => m.CreditsPage),
+  },
 ];

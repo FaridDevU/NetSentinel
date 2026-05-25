@@ -1,0 +1,74 @@
+<div class="page tutorial-page">
+  <div class="page-header">
+    <h1 class="page-title">{{ 'tutorial.title' | t }}</h1>
+    <p class="page-subtitle">{{ 'tutorial.subtitle' | t }}</p>
+  </div>
+
+  <section class="tutorial-hero">
+    <div>
+      <span class="eyebrow">{{ 'tutorial.eyebrow' | t }}</span>
+      <h2>{{ 'tutorial.hero.title' | t }}</h2>
+      <p>{{ 'tutorial.hero.body' | t }}</p>
+    </div>
+    <button class="practice-btn" type="button" (click)="tutorial.start()" data-tour="tutorial-start">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      {{ 'tutorial.practice' | t }}
+    </button>
+  </section>
+
+  <section class="guide-grid">
+    <article class="guide-item">
+      <div class="guide-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <h3>{{ 'tutorial.step.scan.title' | t }}</h3>
+      <p>{{ 'tutorial.step.scan.body' | t }}</p>
+    </article>
+
+    <article class="guide-item">
+      <div class="guide-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="14" rx="2"/>
+          <path d="M8 21h8"/>
+          <path d="M12 18v3"/>
+        </svg>
+      </div>
+      <h3>{{ 'tutorial.step.results.title' | t }}</h3>
+      <p>{{ 'tutorial.step.results.body' | t }}</p>
+    </article>
+
+    <article class="guide-item">
+      <div class="guide-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19V5"/>
+          <path d="M4 19h16"/>
+          <path d="M8 15l3-4 3 2 4-7"/>
+        </svg>
+      </div>
+      <h3>{{ 'tutorial.step.track.title' | t }}</h3>
+      <p>{{ 'tutorial.step.track.body' | t }}</p>
+    </article>
+  </section>
+
+  <section class="tips-section">
+    <h2>{{ 'tutorial.tips.title' | t }}</h2>
+    <div class="tips-list">
+      <div class="tip-row">
+        <span>1</span>
+        <p>{{ 'tutorial.tip.one' | t }}</p>
+      </div>
+      <div class="tip-row">
+        <span>2</span>
+        <p>{{ 'tutorial.tip.two' | t }}</p>
+      </div>
+      <div class="tip-row">
+        <span>3</span>
+        <p>{{ 'tutorial.tip.three' | t }}</p>
+      </div>
+    </div>
+  </section>
+</div>
