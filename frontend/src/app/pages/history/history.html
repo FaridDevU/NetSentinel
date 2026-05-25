@@ -14,7 +14,7 @@
   }
 
   @if (error()) {
-    <div class="error-block">{{ error()! | t }}</div>
+    <div class="error-block">{{ error() }}</div>
   }
 
   @if (!loading() && !error() && data()) {

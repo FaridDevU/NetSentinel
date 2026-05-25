@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Subscription, timer } from 'rxjs';
 import { ScanService } from '../../services/scan.service';
+import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { PagedResponse, ScanStatusResponse } from '../../models/scan.models';
 
@@ -23,6 +24,7 @@ export class HistoryPage implements OnInit, OnDestroy {
 
   constructor(
     private scanService: ScanService,
+    private userError: UserErrorService,
     private router: Router
   ) {}
 
@@ -44,8 +46,8 @@ export class HistoryPage implements OnInit, OnDestroy {
         this.loading.set(false);
         this.scheduleRefreshIfNeeded();
       },
-      error: () => {
-        this.error.set('history.error');
+      error: (err) => {
+        this.error.set(this.userError.message(err, 'history'));
         this.loading.set(false);
       },
     });

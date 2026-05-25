@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ScanService } from '../../services/scan.service';
+import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { PagedResponse, ScanCompareResponse, ScanStatusResponse } from '../../models/scan.models';
 
@@ -19,7 +20,10 @@ export class ComparePage implements OnInit {
   loadingScans = signal(true);
   error = signal<string | null>(null);
 
-  constructor(private scanService: ScanService) {}
+  constructor(
+    private scanService: ScanService,
+    private userError: UserErrorService
+  ) {}
 
   ngOnInit(): void {
     this.scanService.getHistory(0, 50).subscribe({
@@ -42,7 +46,7 @@ export class ComparePage implements OnInit {
     this.error.set(null);
     this.scanService.compareScans(this.scanIdA(), this.scanIdB()).subscribe({
       next: (r) => { this.result.set(r); this.loading.set(false); },
-      error: () => { this.error.set('compare.error'); this.loading.set(false); },
+      error: (err) => { this.error.set(this.userError.message(err, 'compare')); this.loading.set(false); },
     });
   }
 

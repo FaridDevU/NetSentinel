@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ScanService } from '../../services/scan.service';
+import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { DashboardResponse } from '../../models/scan.models';
 
@@ -17,13 +18,14 @@ export class DashboardPage implements OnInit {
 
   constructor(
     private scanService: ScanService,
+    private userError: UserErrorService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.scanService.getDashboard().subscribe({
       next: (d) => { this.data.set(d); this.loading.set(false); },
-      error: () => { this.error.set('dashboard.error'); this.loading.set(false); },
+      error: (err) => { this.error.set(this.userError.message(err, 'dashboard')); this.loading.set(false); },
     });
   }
 

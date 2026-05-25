@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { ScanService } from '../../services/scan.service';
+import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AssetDto } from '../../models/scan.models';
 
@@ -17,12 +18,16 @@ export class AssetsPage implements OnInit {
   error = signal<string | null>(null);
   filterRisk = signal<string>('');
 
-  constructor(private scanService: ScanService, private router: Router) {}
+  constructor(
+    private scanService: ScanService,
+    private userError: UserErrorService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.scanService.getAssets().subscribe({
       next: (a) => { this.assets.set(a); this.loading.set(false); },
-      error: () => { this.error.set('assets.error'); this.loading.set(false); },
+      error: (err) => { this.error.set(this.userError.message(err, 'assets')); this.loading.set(false); },
     });
   }
 
