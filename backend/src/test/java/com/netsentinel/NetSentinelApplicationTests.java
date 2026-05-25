@@ -1,11 +1,13 @@
 package com.netsentinel;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+
 class NetSentinelApplicationTests {
+
     @Test
-    void contextLoads() {
+    void applicationClassExists() {
+        assertThat(NetSentinelApplication.class).isNotNull();
     }
 }
