@@ -37,9 +37,9 @@
           <h3 class="empty-title">{{ 'agent.empty.title' | t }}</h3>
           <p class="empty-body">{{ 'agent.empty.body' | t }}</p>
           <div class="suggestions">
-            <button class="suggestion-btn" (click)="suggest('agent.suggest.scan' | t)">{{ 'agent.suggest.scan' | t }}</button>
-            <button class="suggestion-btn" (click)="suggest('agent.suggest.history' | t)">{{ 'agent.suggest.history' | t }}</button>
-            <button class="suggestion-btn" (click)="suggest('agent.suggest.vulns' | t)">{{ 'agent.suggest.vulns' | t }}</button>
+            <button class="suggestion-btn" (click)="suggestKey('agent.suggest.scan')">{{ 'agent.suggest.scan' | t }}</button>
+            <button class="suggestion-btn" (click)="suggestKey('agent.suggest.history')">{{ 'agent.suggest.history' | t }}</button>
+            <button class="suggestion-btn" (click)="suggestKey('agent.suggest.vulns')">{{ 'agent.suggest.vulns' | t }}</button>
           </div>
         </div>
       }

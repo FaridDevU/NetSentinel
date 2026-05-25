@@ -78,6 +78,10 @@ export class AgentPage implements OnDestroy {
     this.send();
   }
 
+  suggestKey(key: string): void {
+    this.suggest(this.lang.t(key));
+  }
+
   onEnter(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
