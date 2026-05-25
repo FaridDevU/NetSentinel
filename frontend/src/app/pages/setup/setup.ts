@@ -6,6 +6,7 @@ interface DepResult {
   label: string;
   ok: boolean;
   detail: string;
+  technicalDetail?: string;
 }
 
 type SetupState = 'checking' | 'missing' | 'installing' | 'ready' | 'needs_reboot' | 'error';
@@ -22,6 +23,8 @@ export class SetupPage implements OnInit, OnDestroy {
   state = signal<SetupState>('checking');
   deps = signal<DepResult[]>([]);
   statusMsg = signal('');
+  setupDetail = signal('');
+  showTechnicalDetails = signal(false);
   nvdKey = '';
   nvdSaved = signal(false);
 
@@ -52,12 +55,16 @@ export class SetupPage implements OnInit, OnDestroy {
 
   install(): void {
     this.statusMsg.set('');
+    this.setupDetail.set('');
+    this.showTechnicalDetails.set(false);
     this.state.set('installing');
     this.electron.runSetup();
     this.pollTimer = setInterval(() => this.pollStatus(), 3000);
+    this.pollStatus();
   }
 
   private pollStatus(): void {
+    this.refreshSetupDetail();
     this.electron.getSetupStatus().then((status: string) => {
       const progress: Record<string, string> = {
         'INSTALLING_TOOLS': 'setup.progress.tools',
@@ -75,7 +82,7 @@ export class SetupPage implements OnInit, OnDestroy {
       } else if (status === 'NEEDS_REBOOT') {
         this.stopPolling();
         this.state.set('needs_reboot');
-      } else if (status === 'KALI_INSTALL_FAILED') {
+      } else if (status.endsWith('_FAILED') || status === 'SETUP_FAILED') {
         this.stopPolling();
         this.state.set('error');
       }
@@ -92,7 +99,14 @@ export class SetupPage implements OnInit, OnDestroy {
 
   retry(): void {
     this.statusMsg.set('');
+    this.setupDetail.set('');
+    this.showTechnicalDetails.set(false);
     this.runCheck();
+  }
+
+  toggleTechnicalDetails(): void {
+    this.showTechnicalDetails.update((v) => !v);
+    this.refreshSetupDetail();
   }
 
   private stopPolling(): void {
@@ -107,6 +121,13 @@ export class SetupPage implements OnInit, OnDestroy {
     if (!key) return;
     this.electron.saveNvdKey(key).then(() => {
       this.nvdSaved.set(true);
+    }).catch(() => {});
+  }
+
+  private refreshSetupDetail(): void {
+    if (!this.electron?.getSetupDetail) return;
+    this.electron.getSetupDetail().then((detail: string) => {
+      this.setupDetail.set(detail ?? '');
     }).catch(() => {});
   }
 

@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld("electron", {
   checkDepsQuick: () => ipcRenderer.invoke('deps:quick'),
   checkDeps: () => ipcRenderer.invoke('deps:check'),
   getSetupStatus: () => ipcRenderer.invoke('deps:status'),
+  getSetupDetail: () => ipcRenderer.invoke('deps:detail'),
   runSetup: () => ipcRenderer.invoke('deps:install'),
   startBackend: () => ipcRenderer.invoke('backend:start'),
   getLocalNetworks: () => ipcRenderer.invoke('network:local'),
