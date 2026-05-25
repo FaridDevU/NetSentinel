@@ -28,3 +28,7 @@ NetSentinel/
 - Angular CLI
 - Maven 3.9+
 - WSL2 con Kali Linux
+
+
+>[IMPORTANT]
+AUN ESTA EN CONSTRUCCION
