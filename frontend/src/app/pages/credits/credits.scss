@@ -1,0 +1,123 @@
+.credits-page {
+  padding: 20px 24px;
+  max-width: 980px;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 22px;
+  margin-bottom: 16px;
+}
+
+.profile-mark {
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(49, 126, 246, 0.35);
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.profile-copy h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.profile-copy p,
+.credit-panel p,
+.credit-panel li {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 12px;
+}
+
+.credit-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.main-panel {
+  grid-row: span 2;
+}
+
+.credit-panel h2 {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin-bottom: 9px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tag-list span,
+.contact-lines span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.credit-panel ul {
+  display: grid;
+  gap: 7px;
+  padding-left: 18px;
+}
+
+.contact-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+@media (max-width: 820px) {
+  .profile-section,
+  .credits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-section {
+    align-items: flex-start;
+  }
+}

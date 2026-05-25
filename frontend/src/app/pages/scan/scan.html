@@ -15,7 +15,7 @@
       }
 
       @if (!loadingNetworks() && detectedNetwork() && !showNetworkPicker()) {
-        <div class="detected-card">
+        <div class="detected-card" data-tour="scan-network">
           <div class="detected-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="7" width="20" height="15" rx="2"/>
@@ -47,7 +47,7 @@
       }
 
       @if (!loadingNetworks() && showManualInput() && !detectedNetwork()) {
-        <div class="form-group">
+        <div class="form-group" data-tour="scan-network">
           @if (localNetworks().length === 0) {
             <p class="no-networks-msg">{{ 'scan.network.none' | t }}</p>
           }
@@ -72,7 +72,7 @@
         </div>
       }
 
-      <div class="profile-row">
+      <div class="profile-row" data-tour="scan-profile">
         <span class="profile-label">{{ 'scan.profile.label' | t }}</span>
         <div class="profile-picker">
           <button [class]="'profile-btn' + (scanProfile() === 'RAPIDO' ? ' active' : '')" type="button" (click)="scanProfile.set('RAPIDO')">
@@ -93,6 +93,7 @@
       <div class="form-actions-big">
         <button
           class="btn-scan"
+          data-tour="scan-start"
           (click)="startScan()"
           [disabled]="loadingNetworks() || !canScan"
         >

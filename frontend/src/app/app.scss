@@ -77,6 +77,7 @@
   flex-direction: column;
   gap: 2px;
   align-content: flex-start;
+  overflow-y: auto;
 }
 
 .nav-item {
@@ -106,6 +107,132 @@
   svg {
     flex-shrink: 0;
     opacity: 0.7;
+  }
+}
+
+.tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.tour-spotlight {
+  position: fixed;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(5, 6, 10, 0.78), 0 0 24px rgba(49, 126, 246, 0.45);
+  transition: top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease;
+  pointer-events: none;
+}
+
+.tour-arrow {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: visible;
+  pointer-events: none;
+
+  line {
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 6 5;
+    filter: drop-shadow(0 0 6px rgba(49, 126, 246, 0.85));
+  }
+
+  path {
+    fill: var(--accent);
+  }
+}
+
+.tour-card {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: min(360px, calc(100vw - 44px));
+  background: #242426;
+  border: 1px solid rgba(49, 126, 246, 0.42);
+  border-radius: 7px;
+  padding: 16px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.48);
+  pointer-events: auto;
+}
+
+.tour-card::before {
+  content: "";
+  position: absolute;
+  right: 34px;
+  top: -10px;
+  width: 18px;
+  height: 18px;
+  background: #242426;
+  border-left: 1px solid rgba(49, 126, 246, 0.42);
+  border-top: 1px solid rgba(49, 126, 246, 0.42);
+  transform: rotate(45deg);
+}
+
+.tour-count {
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.tour-card h2 {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 650;
+  margin-bottom: 6px;
+}
+
+.tour-card p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tour-btn {
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, opacity 150ms ease;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+
+    &:hover:not(:disabled) {
+      background: var(--elevated);
+      color: var(--text-primary);
+    }
+  }
+
+  &.primary {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #fff;
+
+    &:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
   }
 }
 
