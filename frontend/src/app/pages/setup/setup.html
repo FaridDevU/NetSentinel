@@ -37,6 +37,19 @@
           }
         </div>
         <p class="setup-hint">{{ 'setup.missing.body' | t }}</p>
+        <button class="technical-toggle" (click)="toggleTechnicalDetails()">
+          {{ showTechnicalDetails() ? ('setup.technical.hide' | t) : ('setup.technical.show' | t) }}
+        </button>
+        @if (showTechnicalDetails()) {
+          <div class="technical-panel">
+            @for (dep of deps(); track dep.id) {
+              <div class="technical-row">
+                <span>{{ dep.id }}</span>
+                <strong>{{ dep.technicalDetail || dep.detail }}</strong>
+              </div>
+            }
+          </div>
+        }
         <div class="setup-actions">
           <button class="btn-primary-setup" (click)="install()">{{ 'setup.btn.install' | t }}</button>
           <button class="btn-ghost-setup" (click)="skip()">{{ 'setup.btn.later' | t }}</button>
@@ -49,6 +62,9 @@
         <h2 class="setup-title">{{ 'setup.installing.title' | t }}</h2>
         <div class="spinner-lg"></div>
         <p class="setup-msg">{{ statusMsg() ? (statusMsg() | t) : ('setup.installing.body' | t) }}</p>
+        @if (setupDetail()) {
+          <p class="setup-detail">{{ setupDetail() }}</p>
+        }
         <button class="btn-ghost-setup" (click)="verifyNow()">{{ 'setup.btn.verify' | t }}</button>
       </div>
     }
@@ -67,6 +83,14 @@
       <div class="setup-body-section">
         <h2 class="setup-title">{{ 'setup.error.title' | t }}</h2>
         <p class="setup-msg">{{ 'setup.error.body' | t }}</p>
+        <button class="technical-toggle" (click)="toggleTechnicalDetails()">
+          {{ showTechnicalDetails() ? ('setup.technical.hide' | t) : ('setup.technical.show' | t) }}
+        </button>
+        @if (showTechnicalDetails() && setupDetail()) {
+          <div class="technical-panel">
+            <pre>{{ setupDetail() }}</pre>
+          </div>
+        }
         <div class="setup-actions">
           <button class="btn-primary-setup" (click)="retry()">{{ 'setup.btn.retry' | t }}</button>
           <button class="btn-ghost-setup" (click)="skip()">{{ 'setup.btn.later' | t }}</button>

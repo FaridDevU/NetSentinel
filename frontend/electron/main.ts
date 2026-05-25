@@ -12,6 +12,7 @@ interface DepResult {
   label: string;
   ok: boolean;
   detail: string;
+  technicalDetail?: string;
 }
 
 interface LocalNetwork {
@@ -56,26 +57,26 @@ async function runDepsCheck(): Promise<DepResult[]> {
   const results: DepResult[] = [];
 
   const wslOk = await spawnOk('wsl', ['--status'], 5000);
-  results.push({ id: 'wsl', label: 'Funciones locales de Windows', ok: wslOk, detail: wslOk ? 'Listo' : 'Pendiente' });
+  results.push({ id: 'wsl', label: 'Funciones locales de Windows', ok: wslOk, detail: wslOk ? 'Listo' : 'Pendiente', technicalDetail: 'wsl --status' });
   if (!wslOk) return results;
 
   const kaliBuf = await spawnCapture('wsl', ['--list', '--quiet'], 5000);
   const kaliOk = kaliBuf.toString('utf16le').toLowerCase().includes('kali');
-  results.push({ id: 'kali', label: 'Motor local de analisis', ok: kaliOk, detail: kaliOk ? 'Listo' : 'Pendiente' });
+  results.push({ id: 'kali', label: 'Motor local de analisis', ok: kaliOk, detail: kaliOk ? 'Listo' : 'Pendiente', technicalDetail: 'wsl --list --quiet' });
   if (!kaliOk) return results;
 
   const jarOk = await spawnOk('wsl', ['-d', 'kali-linux', '--', 'bash', '-c', 'test -f $HOME/.netsentinel/backend.jar'], 10000);
-  results.push({ id: 'backend', label: 'Servicio interno', ok: jarOk, detail: jarOk ? 'Listo' : 'Pendiente' });
+  results.push({ id: 'backend', label: 'Servicio interno', ok: jarOk, detail: jarOk ? 'Listo' : 'Pendiente', technicalDetail: '~/.netsentinel/backend.jar' });
 
   const sandboxOk = await spawnOk('wsl', ['-d', 'kali-linux', '--', 'bash', '-c', 'test -x $HOME/.netsentinel/sandbox'], 10000);
-  results.push({ id: 'sandbox', label: 'Motor seguro de escaneo', ok: sandboxOk, detail: sandboxOk ? 'Listo' : 'Pendiente' });
+  results.push({ id: 'sandbox', label: 'Motor seguro de escaneo', ok: sandboxOk, detail: sandboxOk ? 'Listo' : 'Pendiente', technicalDetail: '~/.netsentinel/sandbox' });
 
   const pgBuf = await spawnCapture('wsl', [
     '-d', 'kali-linux', '--', 'bash', '-c',
     'sudo service postgresql start 2>/dev/null; pg_isready -h 127.0.0.1 -U netsentinel -d netsentinel 2>&1'
   ], 20000);
   const pgOk = pgBuf.toString('utf8').includes('accepting connections');
-  results.push({ id: 'postgresql', label: 'Almacenamiento local', ok: pgOk, detail: pgOk ? 'Listo' : 'Pendiente' });
+  results.push({ id: 'postgresql', label: 'Almacenamiento local', ok: pgOk, detail: pgOk ? 'Listo' : 'Pendiente', technicalDetail: pgBuf.toString('utf8').trim() || 'pg_isready' });
 
   return results;
 }
@@ -125,6 +126,11 @@ function setupIpcHandlers(): void {
   ipcMain.handle('deps:status', () => {
     const statusFile = join(app.getPath('appData'), 'NetSentinel', 'setup-status.txt');
     try { return readFileSync(statusFile, 'utf8').trim(); } catch { return 'UNKNOWN'; }
+  });
+
+  ipcMain.handle('deps:detail', () => {
+    const detailFile = join(app.getPath('appData'), 'NetSentinel', 'setup-detail.txt');
+    try { return readFileSync(detailFile, 'utf8').trim(); } catch { return ''; }
   });
 
   ipcMain.handle('deps:install', () => {
