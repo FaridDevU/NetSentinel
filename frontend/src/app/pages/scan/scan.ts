@@ -5,6 +5,7 @@ import { Subscription, timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
 import { LangService } from '../../services/lang.service';
+import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { LocalNetworkInterface, ScanProfile, ScanStatus } from '../../models/scan.models';
 
@@ -84,6 +85,7 @@ export class ScanPage implements OnInit, OnDestroy {
 
   private scanService = inject(ScanService);
   private lang = inject(LangService);
+  private userError = inject(UserErrorService);
   private router = inject(Router);
 
   constructor() {
@@ -182,7 +184,7 @@ export class ScanPage implements OnInit, OnDestroy {
         this.stopTimers();
         this.scanning.set(false);
         this.currentStatus.set('FAILED');
-        this.errorMessage.set(err?.error?.error ?? this.lang.t('scan.error.startFailed'));
+        this.errorMessage.set(this.userError.message(err, 'scan-start'));
       },
     });
   }
@@ -216,13 +218,13 @@ export class ScanPage implements OnInit, OnDestroy {
           } else if (status.status === 'FAILED' || status.status === 'CANCELLED') {
             this.stopTimers();
             this.scanning.set(false);
-            this.errorMessage.set(status.errorMessage ?? this.lang.t('scan.error.scanFailed'));
+            this.errorMessage.set(this.userError.scanFailure(status.errorMessage));
           }
         },
-        error: () => {
+        error: (err) => {
           this.stopTimers();
           this.scanning.set(false);
-          this.errorMessage.set(this.lang.t('scan.error.lostConnection'));
+          this.errorMessage.set(this.userError.message(err, 'scan-poll'));
         },
       });
   }

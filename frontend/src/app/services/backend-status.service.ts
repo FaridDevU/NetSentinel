@@ -1,27 +1,46 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class BackendStatusService {
-  readonly offline = signal(false);
+  readonly repairing = signal(false);
+  readonly offline = computed(() => this.repairing());
   private recoverTimer?: ReturnType<typeof setInterval>;
+  private recoveryStarted = false;
 
   markOffline(): void {
-    this.offline.set(true);
+    this.repairing.set(true);
     this.startRecovery();
   }
 
   markOnline(): void {
-    this.offline.set(false);
+    this.repairing.set(false);
+    this.recoveryStarted = false;
     this.stopRecovery();
   }
 
   private startRecovery(): void {
+    this.tryStartBackend();
+    void this.checkHealth();
     if (this.recoverTimer) return;
     this.recoverTimer = setInterval(() => {
-      fetch('http://localhost:8080/api/health')
-        .then(r => { if (r.ok) this.markOnline(); })
-        .catch(() => {});
+      void this.checkHealth();
     }, 5000);
+  }
+
+  private tryStartBackend(): void {
+    if (this.recoveryStarted) return;
+    this.recoveryStarted = true;
+    const e = (window as any).electron;
+    if (e?.startBackend) {
+      void e.startBackend().catch(() => {});
+    }
+  }
+
+  private async checkHealth(): Promise<void> {
+    try {
+      const response = await fetch('http://localhost:8080/api/health');
+      if (response.ok) this.markOnline();
+    } catch {}
   }
 
   private stopRecovery(): void {

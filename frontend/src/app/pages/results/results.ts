@@ -4,7 +4,7 @@ import { DatePipe } from '@angular/common';
 import { Subscription, timer } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 import { ScanService } from '../../services/scan.service';
-import { LangService } from '../../services/lang.service';
+import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AnalysisFinding, FindingStatusMap, HostDto, ScanResultsResponse, WebFindingDto } from '../../models/scan.models';
 
@@ -31,7 +31,7 @@ export class ResultsPage implements OnInit, OnDestroy {
   private logSub?: Subscription;
   private statusSub?: Subscription;
 
-  private lang = inject(LangService);
+  private userError = inject(UserErrorService);
 
   constructor(
     private route: ActivatedRoute,
@@ -59,8 +59,8 @@ export class ResultsPage implements OnInit, OnDestroy {
           error: () => {},
         });
       },
-      error: () => {
-        this.error.set(this.lang.t('results.error.loadFailed'));
+      error: (err) => {
+        this.error.set(this.userError.message(err, 'results'));
         this.loading.set(false);
       },
     });
