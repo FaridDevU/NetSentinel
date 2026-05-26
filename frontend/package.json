@@ -11,7 +11,7 @@
     "test": "ng test",
     "electron:tsc": "tsc -p tsconfig.electron.json",
     "electron:dev": "npm run electron:tsc && cross-env NODE_ENV=development concurrently \"ng serve\" \"wait-on http://localhost:4200 && electron .\"",
-    "electron:build": "npm run electron:tsc && cross-env NODE_ENV=production ng build && electron-builder",
+    "electron:build": "npm run electron:tsc && cross-env NODE_ENV=production ng build --base-href ./ && electron-builder",
     "electron:dist": "cd ../backend && mvn package -q -DskipTests && cd ../frontend && node scripts/build-sandbox.js && npm run electron:build"
   },
   "private": true,
