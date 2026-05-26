@@ -266,7 +266,11 @@ public class ScanService {
     }
 
     public boolean cancelScan(UUID id) {
-        return scanJobUpdater.cancelScan(id);
+        boolean cancelled = scanJobUpdater.cancelScan(id);
+        if (cancelled) {
+            sandboxService.stopRunningTools();
+        }
+        return cancelled;
     }
 
     public void deleteScan(UUID id) {
