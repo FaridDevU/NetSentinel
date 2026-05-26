@@ -173,13 +173,15 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void cveDebajo40_noGeneraFinding() {
+    void cveDebajo40_generaSoloExposicionBaja() {
         NetworkPort p = portWithCve(80, "http", "CVE-2020-0001", 3.1);
         NetworkHost h = host("192.168.1.50", p);
 
         AnalysisReport report = service.analyze("192.168.1.50", List.of(h));
 
-        assertThat(report.findings()).isEmpty();
+        assertThat(report.findings()).hasSize(1);
+        assertThat(report.findings().get(0).severity()).isEqualTo("LOW");
+        assertThat(report.findings().get(0).relatedCves()).isEmpty();
     }
 
     @Test
