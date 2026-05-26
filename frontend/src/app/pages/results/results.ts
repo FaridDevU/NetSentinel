@@ -7,10 +7,35 @@ import { ScanService } from '../../services/scan.service';
 import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AnalysisFinding, FindingStatusMap, HostDto, ScanResultsResponse, WebFindingDto } from '../../models/scan.models';
+import {
+  LucideBraces,
+  LucideCheck,
+  LucideChevronDown,
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucideFileText,
+  LucideMonitor,
+  LucideShield,
+  LucideTableProperties,
+  LucideTerminal,
+} from '@lucide/angular';
 
 @Component({
   selector: 'app-results',
-  imports: [DatePipe, TranslatePipe],
+  imports: [
+    DatePipe,
+    TranslatePipe,
+    LucideBraces,
+    LucideCheck,
+    LucideChevronDown,
+    LucideChevronLeft,
+    LucideChevronRight,
+    LucideFileText,
+    LucideMonitor,
+    LucideShield,
+    LucideTableProperties,
+    LucideTerminal,
+  ],
   templateUrl: './results.html',
   styleUrl: './results.scss',
 })

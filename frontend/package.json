@@ -43,7 +43,14 @@
       }
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build-resources/icon.png"
     },
     "nsis": {
@@ -64,6 +71,7 @@
     "@angular/forms": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
+    "@lucide/angular": "^1.16.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

@@ -1,5 +1,6 @@
 import { Component, EventEmitter, OnDestroy, OnInit, Output, signal } from '@angular/core';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { LucideCheck, LucideX } from '@lucide/angular';
 
 interface DepResult {
   id: string;
@@ -13,7 +14,7 @@ type SetupState = 'checking' | 'missing' | 'installing' | 'ready' | 'needs_reboo
 
 @Component({
   selector: 'app-setup',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, LucideCheck, LucideX],
   templateUrl: './setup.html',
   styleUrl: './setup.scss',
 })

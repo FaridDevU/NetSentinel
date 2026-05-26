@@ -6,10 +6,11 @@ import { ScanService } from '../../services/scan.service';
 import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { PagedResponse, ScanStatusResponse } from '../../models/scan.models';
+import { LucideRouter, LucideTrash2 } from '@lucide/angular';
 
 @Component({
   selector: 'app-history',
-  imports: [DatePipe, RouterLink, TranslatePipe],
+  imports: [DatePipe, RouterLink, TranslatePipe, LucideRouter, LucideTrash2],
   templateUrl: './history.html',
   styleUrl: './history.scss',
 })

@@ -5,6 +5,7 @@ import { ScanService } from '../../services/scan.service';
 import { LangService } from '../../services/lang.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AgentChatMessage, AgentSseEvent } from '../../models/scan.models';
+import { LucideCheck, LucideKeyRound, LucideRadio, LucideSend } from '@lucide/angular';
 
 interface ToolCallDisplay {
   name: string;
@@ -20,7 +21,7 @@ interface DisplayMessage {
 
 @Component({
   selector: 'app-agent',
-  imports: [FormsModule, TranslatePipe],
+  imports: [FormsModule, TranslatePipe, LucideCheck, LucideKeyRound, LucideRadio, LucideSend],
   templateUrl: './agent.html',
   styleUrl: './agent.scss',
 })

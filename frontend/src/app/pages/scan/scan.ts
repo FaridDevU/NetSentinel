@@ -8,10 +8,11 @@ import { LangService } from '../../services/lang.service';
 import { UserErrorService } from '../../services/user-error.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { LocalNetworkInterface, ScanProfile, ScanStatus } from '../../models/scan.models';
+import { LucideChevronDown, LucideRouter, LucideShield } from '@lucide/angular';
 
 @Component({
   selector: 'app-scan',
-  imports: [FormsModule, TranslatePipe],
+  imports: [FormsModule, TranslatePipe, LucideChevronDown, LucideRouter, LucideShield],
   templateUrl: './scan.html',
   styleUrl: './scan.scss',
 })
