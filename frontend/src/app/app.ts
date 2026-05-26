@@ -6,6 +6,19 @@ import { LangService } from './services/lang.service';
 import { TutorialService } from './services/tutorial.service';
 import { TranslatePipe } from './pipes/translate.pipe';
 import { SetupPage } from './pages/setup/setup';
+import {
+  LucideChartNoAxesColumn,
+  LucideCircleAlert,
+  LucideCircleHelp,
+  LucideHistory,
+  LucideLayoutDashboard,
+  LucideMessageCircle,
+  LucideMinus,
+  LucideSearch,
+  LucideServer,
+  LucideUser,
+  LucideX,
+} from '@lucide/angular';
 
 interface TourArrowLine {
   x1: number;
@@ -16,7 +29,25 @@ interface TourArrowLine {
 
 @Component({
   selector: 'app-root',
-  imports: [NgStyle, RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, SetupPage],
+  imports: [
+    NgStyle,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    TranslatePipe,
+    SetupPage,
+    LucideChartNoAxesColumn,
+    LucideCircleAlert,
+    LucideCircleHelp,
+    LucideHistory,
+    LucideLayoutDashboard,
+    LucideMessageCircle,
+    LucideMinus,
+    LucideSearch,
+    LucideServer,
+    LucideUser,
+    LucideX,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
