@@ -114,29 +114,31 @@ wsl -d kali-linux -- bash -c "
 
 Write-Status "CREATING_SCRIPTS" "Creating ~/.netsentinel/start.sh."
 Write-Output "Creating startup script..."
-wsl -d kali-linux -- bash -c "
-    mkdir -p ~/.netsentinel
-    {
-        echo '#!/bin/bash'
-        echo 'if [ -f \"\$HOME/.netsentinel/config.env\" ]; then'
-        echo '    set -a'
-        echo '    source \"\$HOME/.netsentinel/config.env\"'
-        echo '    set +a'
-        echo 'fi'
-        echo 'sudo service postgresql start 2>/dev/null || true'
-        echo 'for i in \$(seq 1 15); do'
-        echo '    pg_isready -h 127.0.0.1 -U netsentinel -d netsentinel -q 2>/dev/null && break'
-        echo '    sleep 1'
-        echo 'done'
-        echo 'if ! pgrep -f netsentinel-sandbox > /dev/null 2>&1; then'
-        echo '    nohup ~/.netsentinel/sandbox > ~/.netsentinel/sandbox.log 2>&1 &'
-        echo '    sleep 1'
-        echo 'fi'
-        echo 'exec java -jar ~/.netsentinel/backend.jar'
-    } > ~/.netsentinel/start.sh
-    chmod +x ~/.netsentinel/start.sh
-    echo Startup script created
-" 2>&1
+$startupScript = @'
+#!/bin/bash
+set -e
+
+if [ -f "$HOME/.netsentinel/config.env" ]; then
+    set -a
+    source "$HOME/.netsentinel/config.env"
+    set +a
+fi
+
+sudo service postgresql start 2>/dev/null || true
+for i in $(seq 1 15); do
+    pg_isready -h 127.0.0.1 -U netsentinel -d netsentinel -q 2>/dev/null && break
+    sleep 1
+done
+
+if ! pgrep -f "$HOME/.netsentinel/sandbox" > /dev/null 2>&1; then
+    nohup "$HOME/.netsentinel/sandbox" > "$HOME/.netsentinel/sandbox.log" 2>&1 &
+    sleep 1
+fi
+
+exec java -jar "$HOME/.netsentinel/backend.jar" >> "$HOME/.netsentinel/backend.log" 2>&1
+'@
+
+$startupScript -replace "`r`n", "`n" | wsl -d kali-linux -- bash -c "mkdir -p ~/.netsentinel && cat > ~/.netsentinel/start.sh && sed -i 's/\r$//' ~/.netsentinel/start.sh && chmod +x ~/.netsentinel/start.sh && echo Startup script created" 2>&1
 
 Write-Output "Verifying setup..."
 wsl -d kali-linux -- bash -c "
