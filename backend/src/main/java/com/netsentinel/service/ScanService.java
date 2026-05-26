@@ -119,26 +119,31 @@ public class ScanService {
         List<NetworkHost> hosts = nmapParserService.parse(result.output(), job);
         addLog(scanJobId, "nmap finalizado — " + hosts.size() + " dispositivo(s) encontrado(s)");
 
+        boolean quickScan = isQuickScan(job.getParameters());
         long openPorts = hosts.stream()
                 .flatMap(h -> h.getPorts().stream())
                 .filter(p -> "open".equals(p.getState()) && p.getService() != null)
                 .count();
 
-        if (openPorts > 0) {
+        if (quickScan) {
+            addLog(scanJobId, "Revision rapida: usando dispositivos y puertos detectados, sin consultas externas.");
+        } else if (openPorts > 0) {
             addLog(scanJobId, "Consultando base de datos de vulnerabilidades para " + openPorts + " servicio(s)...");
         }
 
-        for (NetworkHost host : hosts) {
-            for (NetworkPort port : host.getPorts()) {
-                if ("open".equals(port.getState()) && port.getService() != null) {
-                    List<CveEntry> cves = nvdService.lookupCves(port.getService(), port.getVersion(), port);
-                    port.setCves(cves);
-                    if (!cves.isEmpty()) {
-                        addLog(scanJobId, "  " + host.getIp() + ":" + port.getPortNumber()
+        if (!quickScan) {
+            for (NetworkHost host : hosts) {
+                for (NetworkPort port : host.getPorts()) {
+                    if ("open".equals(port.getState()) && port.getService() != null) {
+                        List<CveEntry> cves = nvdService.lookupCves(port.getService(), port.getVersion(), port);
+                        port.setCves(cves);
+                        if (!cves.isEmpty()) {
+                            addLog(scanJobId, "  " + host.getIp() + ":" + port.getPortNumber()
                                 + " (" + port.getService() + ") — " + cves.size() + " CVE(s)");
                     }
                 }
             }
+        }
         }
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
@@ -146,7 +151,9 @@ public class ScanService {
             return;
         }
 
-        runWebScans(scanJobId, hosts);
+        if (!quickScan) {
+            runWebScans(scanJobId, hosts);
+        }
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
             addLog(scanJobId, "Analisis cancelado.");
@@ -215,6 +222,12 @@ public class ScanService {
                 }
             }
         }
+    }
+
+    private boolean isQuickScan(List<String> parameters) {
+        return parameters != null
+                && parameters.contains("--top-ports")
+                && parameters.contains("100");
     }
 
     private void persistLogs(UUID scanJobId) {

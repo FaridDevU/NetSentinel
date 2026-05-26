@@ -100,6 +100,7 @@ public class AnalysisService {
         }
 
         analyzeWebFindings(host, findings);
+        addLowExposureFinding(host, openPorts, findings);
 
         String hostRisk = calculateHostRisk(openPorts, findings, host.getIp());
         summaries.add(new HostSummary(
@@ -140,6 +141,29 @@ public class AnalysisService {
                     host.getIp(), 80, "http", List.of()
             ));
         }
+    }
+
+    private void addLowExposureFinding(NetworkHost host, List<NetworkPort> openPorts, List<Finding> findings) {
+        if (openPorts.isEmpty()) return;
+        boolean hostAlreadyHasFinding = findings.stream().anyMatch(f -> f.host().equals(host.getIp()));
+        if (hostAlreadyHasFinding) return;
+
+        String ports = openPorts.stream()
+                .map(p -> p.getPortNumber() + "/" + (p.getService() != null ? p.getService() : p.getProtocol()))
+                .limit(5)
+                .collect(Collectors.joining(", "));
+
+        NetworkPort first = openPorts.get(0);
+        findings.add(new Finding(
+                "LOW",
+                "Puertos abiertos detectados en " + host.getIp(),
+                "El dispositivo expone servicios en la red: " + ports +
+                        ". No se confirmaron vulnerabilidades conocidas en esta revision, pero los servicios abiertos deben mantenerse actualizados y restringidos a equipos confiables.",
+                host.getIp(),
+                first.getPortNumber(),
+                first.getService() != null ? first.getService() : "unknown",
+                List.of()
+        ));
     }
 
     private Finding buildCveFinding(String ip, NetworkPort port, String severity, List<CveEntry> cves) {
