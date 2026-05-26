@@ -58,6 +58,16 @@ public class SandboxService {
         return execute("nikto", url, args, 90);
     }
 
+    public void stopRunningTools() {
+        for (String tool : List.of("nmap", "gobuster", "nikto")) {
+            try {
+                new ProcessBuilder("pkill", "-f", tool).start();
+            } catch (Exception e) {
+                log.debug("Could not stop {}: {}", tool, e.getMessage());
+            }
+        }
+    }
+
     private SandboxResult execute(String tool, String target, List<String> args, int timeoutSecs) {
         log.info("Calling sandbox: tool={} target={}", tool, target);
 
