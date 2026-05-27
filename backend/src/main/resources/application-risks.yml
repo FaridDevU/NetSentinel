@@ -1,0 +1,44 @@
+netsentinel:
+  risks:
+    database-ports: [1433, 1521, 3306, 5432, 5984]
+    services:
+      - port: 21
+        level: MEDIUM
+        short-label: "protocolo en texto claro"
+        reason: "FTP transmite credenciales y datos en texto claro. Una captura pasiva de red es suficiente para robar las credenciales de acceso."
+      - port: 23
+        level: HIGH
+        short-label: "acceso remoto sin cifrado"
+        reason: "Telnet es un protocolo sin cifrado ni proteccion de integridad. Todo el trafico de sesion, incluidas las contrasenas, se transmite en texto plano."
+      - port: 445
+        level: HIGH
+        short-label: "vector de movimiento lateral"
+        reason: "SMB es un vector frecuente de movimiento lateral y propagacion de ransomware. La exposicion a redes no confiables aumenta significativamente el riesgo."
+      - port: 3389
+        level: HIGH
+        short-label: "objetivo de ataques de fuerza bruta"
+        reason: "RDP es uno de los servicios mas atacados mediante fuerza bruta y explotacion de omisiones de autenticacion."
+      - port: 5900
+        level: MEDIUM
+        short-label: "acceso grafico sin autenticacion"
+        reason: "VNC puede configurarse sin autenticacion o con credenciales debiles, permitiendo acceso grafico remoto completo."
+      - port: 6379
+        level: HIGH
+        short-label: "base de datos en cache sin autenticacion"
+        reason: "Redis no tiene autenticacion por defecto. Un atacante con acceso a la red puede leer, escribir o eliminar todos los datos en cache y ejecutar scripts en el servidor."
+      - port: 27017
+        level: HIGH
+        short-label: "base de datos sin autenticacion"
+        reason: "MongoDB se despliega frecuentemente sin autenticacion. Una instancia accesible en la red expone todas las bases de datos a lectura y escritura."
+      - port: 11211
+        level: MEDIUM
+        short-label: "cache sin autenticacion"
+        reason: "Memcached no tiene mecanismo de autenticacion. Las instancias expuestas pueden filtrar datos de la aplicacion en cache y ser explotadas en ataques de amplificacion."
+      - port: 2375
+        level: CRITICAL
+        short-label: "API de contenedores sin autenticacion"
+        reason: "API TCP del daemon de Docker expuesta sin TLS. Cualquier cliente puede crear contenedores, montar el sistema de archivos del host y comprometer el sistema por completo."
+      - port: 9200
+        level: MEDIUM
+        short-label: "indice de busqueda sin autenticacion"
+        reason: "API REST de Elasticsearch expuesta sin autenticacion. Todos los datos indexados son accesibles y el cluster puede ser modificado por cualquier persona con acceso a la red."

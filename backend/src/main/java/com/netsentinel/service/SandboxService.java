@@ -3,6 +3,7 @@ package com.netsentinel.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -20,10 +21,13 @@ import java.util.UUID;
 public class SandboxService {
 
     private static final Logger log = LoggerFactory.getLogger(SandboxService.class);
+    private static final String AUTH_HEADER = "X-Sandbox-Auth";
 
     private final RestClient restClient;
+    private final String authToken;
 
-    public SandboxService(@Value("${sandbox.url:http://127.0.0.1:7878}") String sandboxUrl) {
+    public SandboxService(@Value("${sandbox.url:http://127.0.0.1:7878}") String sandboxUrl,
+                          @Value("${sandbox.auth-token:}") String authToken) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(10));
         factory.setReadTimeout(Duration.ofMinutes(11));
@@ -31,6 +35,12 @@ public class SandboxService {
                 .baseUrl(sandboxUrl)
                 .requestFactory(factory)
                 .build();
+        if (authToken == null || authToken.isBlank()) {
+            this.authToken = "dev-token-changeme";
+            log.warn("sandbox.auth-token vacio, usando token de desarrollo. Configurar SANDBOX_AUTH_TOKEN en produccion.");
+        } else {
+            this.authToken = authToken;
+        }
     }
 
     public record SandboxResult(boolean success, String output, String error) {}
@@ -63,6 +73,7 @@ public class SandboxService {
         try {
             restClient.post()
                     .uri("/cancel/{id}", executionId.toString())
+                    .header(AUTH_HEADER, authToken)
                     .retrieve()
                     .toBodilessEntity();
         } catch (Exception e) {
@@ -85,8 +96,14 @@ public class SandboxService {
             SandboxResponse response = restClient.post()
                     .uri("/execute")
                     .contentType(MediaType.APPLICATION_JSON)
+                    .header(AUTH_HEADER, authToken)
                     .body(requestBody)
                     .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (req, res) -> {
+                        if (res.getStatusCode().value() == 401) {
+                            throw new IllegalStateException("Sandbox rechazo el token de autenticacion");
+                        }
+                    })
                     .body(SandboxResponse.class);
 
             if (response == null) {

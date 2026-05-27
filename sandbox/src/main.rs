@@ -4,7 +4,7 @@ mod validator;
 
 use axum::{
     extract::{Json, Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Router,
@@ -12,11 +12,14 @@ use axum::{
 use models::{ExecuteRequest, ExecuteResponse, HealthResponse};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
-use tracing::info;
+use tracing::{info, warn};
+
+const AUTH_HEADER: &str = "x-sandbox-auth";
 
 #[derive(Clone)]
 pub struct AppState {
     pub running: Arc<Mutex<HashMap<String, u32>>>,
+    pub auth_token: Arc<String>,
 }
 
 #[tokio::main]
@@ -33,8 +36,20 @@ async fn main() {
         .parse()
         .expect("SANDBOX_PORT must be a valid port number");
 
+    let bind_host = std::env::var("SANDBOX_BIND_HOST")
+        .unwrap_or_else(|_| "127.0.0.1".to_string());
+
+    let auth_token = match std::env::var("SANDBOX_AUTH_TOKEN") {
+        Ok(t) if !t.trim().is_empty() => t,
+        _ => {
+            warn!("SANDBOX_AUTH_TOKEN no configurado, usando token de desarrollo. NO usar en produccion.");
+            "dev-token-changeme".to_string()
+        }
+    };
+
     let state = AppState {
         running: Arc::new(Mutex::new(HashMap::new())),
+        auth_token: Arc::new(auth_token),
     };
 
     let app = Router::new()
@@ -43,7 +58,7 @@ async fn main() {
         .route("/cancel/:id", post(cancel_handler))
         .with_state(state);
 
-    let addr = format!("0.0.0.0:{}", port);
+    let addr = format!("{}:{}", bind_host, port);
     info!("NetSentinel Sandbox starting on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr)
@@ -64,8 +79,13 @@ async fn health_handler() -> impl IntoResponse {
 
 async fn execute_handler(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<ExecuteRequest>,
 ) -> (StatusCode, Json<ExecuteResponse>) {
+    if let Err(err) = check_auth(&state, &headers) {
+        return err;
+    }
+
     if let Err(e) = validator::validate_tool(&req.tool) {
         return bad_request(e);
     }
@@ -84,18 +104,16 @@ async fn execute_handler(
 
 async fn cancel_handler(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ExecuteResponse>) {
+    if let Err(err) = check_auth(&state, &headers) {
+        return err;
+    }
+
     let pid = state.running.lock().await.remove(&id);
     if let Some(pid) = pid {
-        let _ = tokio::process::Command::new("pkill")
-            .args(["-TERM", "-P", &pid.to_string()])
-            .status()
-            .await;
-        let _ = tokio::process::Command::new("kill")
-            .args(["-TERM", &pid.to_string()])
-            .status()
-            .await;
+        executor::kill_process_tree(pid).await;
     }
     (
         StatusCode::OK,
@@ -108,6 +126,32 @@ async fn cancel_handler(
             error: None,
         }),
     )
+}
+
+fn check_auth(
+    state: &AppState,
+    headers: &HeaderMap,
+) -> Result<(), (StatusCode, Json<ExecuteResponse>)> {
+    let provided = headers
+        .get(AUTH_HEADER)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if provided == state.auth_token.as_str() {
+        Ok(())
+    } else {
+        warn!("Sandbox auth rechazado: header invalido o ausente");
+        Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ExecuteResponse {
+                success: false,
+                stdout: None,
+                stderr: None,
+                exit_code: None,
+                duration_ms: 0,
+                error: Some("Sandbox auth invalida".to_string()),
+            }),
+        ))
+    }
 }
 
 fn bad_request(error: String) -> (StatusCode, Json<ExecuteResponse>) {

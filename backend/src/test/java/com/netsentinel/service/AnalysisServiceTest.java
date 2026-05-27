@@ -1,5 +1,6 @@
 package com.netsentinel.service;
 
+import com.netsentinel.config.RiskCatalogProperties;
 import com.netsentinel.dto.AnalysisReport;
 import com.netsentinel.dto.AnalysisReport.Finding;
 import com.netsentinel.entity.CveEntry;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +21,29 @@ class AnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AnalysisService();
+        service = new AnalysisService(buildRiskCatalog());
+    }
+
+    private RiskCatalogProperties buildRiskCatalog() {
+        RiskCatalogProperties props = new RiskCatalogProperties();
+        props.setDatabasePorts(Set.of(1433, 1521, 3306, 5432, 5984));
+        props.setServices(List.of(
+                risk(21, "MEDIUM", "FTP transmite credenciales y datos en texto claro. Una captura pasiva de red es suficiente para robar las credenciales de acceso.", "protocolo en texto claro"),
+                risk(23, "HIGH", "Telnet es un protocolo sin cifrado ni proteccion de integridad. Todo el trafico de sesion, incluidas las contrasenas, se transmite en texto plano.", "acceso remoto sin cifrado"),
+                risk(445, "HIGH", "SMB es un vector frecuente de movimiento lateral y propagacion de ransomware. La exposicion a redes no confiables aumenta significativamente el riesgo.", "vector de movimiento lateral"),
+                risk(3389, "HIGH", "RDP es uno de los servicios mas atacados mediante fuerza bruta y explotacion de omisiones de autenticacion.", "objetivo de ataques de fuerza bruta"),
+                risk(2375, "CRITICAL", "API TCP del daemon de Docker expuesta sin TLS. Cualquier cliente puede crear contenedores, montar el sistema de archivos del host y comprometer el sistema por completo.", "API de contenedores sin autenticacion")
+        ));
+        return props;
+    }
+
+    private RiskCatalogProperties.ServiceRisk risk(int port, String level, String reason, String label) {
+        RiskCatalogProperties.ServiceRisk r = new RiskCatalogProperties.ServiceRisk();
+        r.setPort(port);
+        r.setLevel(level);
+        r.setReason(reason);
+        r.setShortLabel(label);
+        return r;
     }
 
     private NetworkHost host(String ip, NetworkPort... ports) {
