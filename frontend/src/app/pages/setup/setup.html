@@ -50,7 +50,6 @@
         }
         <div class="setup-actions">
           <button class="btn-primary-setup" (click)="install()">{{ 'setup.btn.install' | t }}</button>
-          <button class="btn-ghost-setup" (click)="skip()">{{ 'setup.btn.later' | t }}</button>
         </div>
       </div>
     }
@@ -61,7 +60,14 @@
         <div class="spinner-lg"></div>
         <p class="setup-msg">{{ statusMsg() ? (statusMsg() | t) : ('setup.installing.body' | t) }}</p>
         @if (setupDetail()) {
-          <p class="setup-detail">{{ setupDetail() }}</p>
+          <button class="technical-toggle" (click)="toggleTechnicalDetails()">
+            {{ showTechnicalDetails() ? ('setup.technical.hide' | t) : ('setup.technical.show' | t) }}
+          </button>
+        }
+        @if (showTechnicalDetails() && setupDetail()) {
+          <div class="technical-panel">
+            <pre>{{ setupDetail() }}</pre>
+          </div>
         }
         <button class="btn-ghost-setup" (click)="verifyNow()">{{ 'setup.btn.verify' | t }}</button>
       </div>
@@ -91,7 +97,6 @@
         }
         <div class="setup-actions">
           <button class="btn-primary-setup" (click)="retry()">{{ 'setup.btn.retry' | t }}</button>
-          <button class="btn-ghost-setup" (click)="skip()">{{ 'setup.btn.later' | t }}</button>
         </div>
       </div>
     }
