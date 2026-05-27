@@ -2,18 +2,21 @@ use std::time::{Duration, Instant};
 
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
-use tokio::time::timeout;
+use tokio::time::{sleep, timeout};
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::models::{ExecuteRequest, ExecuteResponse};
+use crate::AppState;
 
 const DEFAULT_TIMEOUT_SECS: u64 = 600;
+const OUTPUT_DRAIN_TIMEOUT_SECS: u64 = 2;
 
-pub async fn execute(req: ExecuteRequest) -> ExecuteResponse {
+pub async fn execute(req: ExecuteRequest, state: AppState) -> ExecuteResponse {
     let exec_id = Uuid::new_v4();
     let start = Instant::now();
     let timeout_secs = req.timeout_secs.unwrap_or(DEFAULT_TIMEOUT_SECS);
+    let execution_id = req.execution_id.clone();
 
     info!(
         exec_id = %exec_id,
@@ -43,20 +46,47 @@ pub async fn execute(req: ExecuteRequest) -> ExecuteResponse {
         }
     };
 
+    if let (Some(id), Some(pid)) = (&execution_id, child.id()) {
+        state.running.lock().await.insert(id.clone(), pid);
+    }
+
     let stdout = child.stdout.take().expect("stdout was piped");
     let stderr = child.stderr.take().expect("stderr was piped");
-
     let stdout_task = tokio::spawn(collect_output(stdout));
     let stderr_task = tokio::spawn(collect_output(stderr));
-    let wait_result = timeout(Duration::from_secs(timeout_secs), child.wait()).await;
 
+    let mut timed_out = false;
+    let status_result = tokio::select! {
+        result = child.wait() => result,
+        _ = sleep(Duration::from_secs(timeout_secs)) => {
+            timed_out = true;
+            let _ = child.start_kill();
+            child.wait().await
+        }
+    };
+
+    if let Some(id) = &execution_id {
+        state.running.lock().await.remove(id);
+    }
+
+    let stdout_output = drain_output(stdout_task).await;
+    let stderr_output = drain_output(stderr_task).await;
     let duration_ms = elapsed_ms(&start);
 
-    let stdout_output = stdout_task.await.ok().and_then(|r| r.ok()).unwrap_or_default();
-    let stderr_output = stderr_task.await.ok().and_then(|r| r.ok()).unwrap_or_default();
+    if timed_out {
+        warn!(exec_id = %exec_id, timeout_secs, "Execution timed out");
+        return ExecuteResponse {
+            success: false,
+            stdout: nonempty(stdout_output),
+            stderr: nonempty(stderr_output),
+            exit_code: None,
+            duration_ms,
+            error: Some(format!("Timed out after {} seconds", timeout_secs)),
+        };
+    }
 
-    match wait_result {
-        Ok(Ok(status)) => {
+    match status_result {
+        Ok(status) => {
             let success = status.success();
             info!(
                 exec_id = %exec_id,
@@ -74,7 +104,7 @@ pub async fn execute(req: ExecuteRequest) -> ExecuteResponse {
                 error: None,
             }
         }
-        Ok(Err(e)) => {
+        Err(e) => {
             error!(exec_id = %exec_id, "Process wait error: {}", e);
             ExecuteResponse {
                 success: false,
@@ -85,18 +115,16 @@ pub async fn execute(req: ExecuteRequest) -> ExecuteResponse {
                 error: Some(format!("Process error: {}", e)),
             }
         }
-        Err(_elapsed) => {
-            warn!(exec_id = %exec_id, timeout_secs, "Execution timed out — process killed");
-            ExecuteResponse {
-                success: false,
-                stdout: nonempty(stdout_output),
-                stderr: None,
-                exit_code: None,
-                duration_ms,
-                error: Some(format!("Timed out after {} seconds", timeout_secs)),
-            }
-        }
     }
+}
+
+async fn drain_output(task: tokio::task::JoinHandle<std::io::Result<String>>) -> String {
+    timeout(Duration::from_secs(OUTPUT_DRAIN_TIMEOUT_SECS), task)
+        .await
+        .ok()
+        .and_then(|r| r.ok())
+        .and_then(|r| r.ok())
+        .unwrap_or_default()
 }
 
 async fn collect_output<R>(reader: R) -> std::io::Result<String>

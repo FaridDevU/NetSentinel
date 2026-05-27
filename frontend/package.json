@@ -24,6 +24,7 @@
       "output": "dist-installer",
       "buildResources": "build-resources"
     },
+    "afterPack": "build-resources/after-pack.js",
     "extraResources": [
       {
         "from": "../backend/target/backend-0.0.1-SNAPSHOT.jar",
@@ -52,7 +53,7 @@
           ]
         }
       ],
-      "icon": "build-resources/icon.png"
+      "icon": "public/icon.ico"
     },
     "nsis": {
       "oneClick": false,

@@ -6,14 +6,12 @@ const frontendDir = path.resolve(__dirname, '..');
 const installerDir = path.join(frontendDir, 'installer');
 const outputBinary = path.join(installerDir, 'netsentinel-sandbox');
 
-if (fs.existsSync(outputBinary)) {
-  console.log('Sandbox binary already present, skipping compilation.');
-  process.exit(0);
-}
-
 console.log('Compiling Rust sandbox for Kali WSL2...');
 
 try {
+  if (fs.existsSync(outputBinary)) {
+    fs.rmSync(outputBinary);
+  }
   const winPath = frontendDir.replace(/\\/g, '/');
   const wslFrontend = execSync(`wsl wslpath -u "${winPath}"`, { encoding: 'utf8' }).trim();
   const wslSandbox = `${wslFrontend}/../sandbox`;

@@ -36,6 +36,8 @@ desktop.ini
 # IDEs
 .idea/
 .vscode/
+.obsidian/
+Obsidian/
 *.suo
 *.ntvs*
 *.njsproj

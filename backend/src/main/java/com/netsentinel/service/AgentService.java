@@ -31,6 +31,11 @@ public class AgentService {
     private static final String MODEL = "claude-sonnet-4-6";
     private static final int MAX_TOKENS = 4096;
     private static final int MAX_ITERATIONS = 15;
+    private static final List<List<String>> ALLOWED_SCAN_PARAMETERS = List.of(
+            List.of("-sV", "-T4", "--top-ports", "100"),
+            List.of("-sV", "-T4"),
+            List.of("-sV", "-T4", "-p-")
+    );
 
     private static final String SYSTEM_PROMPT = """
             Eres NetSentinel, un consultor experto en seguridad de redes para usuarios no técnicos.
@@ -58,7 +63,7 @@ public class AgentService {
         this.restClient = RestClient.create();
     }
 
-    @Async("scanExecutor")
+    @Async("agentExecutor")
     public void streamChat(AgentRequest request, SseEmitter emitter) {
         try {
             List<Map<String, Object>> messages = buildMessages(request.messages());
@@ -176,6 +181,9 @@ public class AgentService {
                     List<String> params = input.has("parameters")
                             ? objectMapper.convertValue(input.get("parameters"), new TypeReference<>() {})
                             : List.of("-sV", "-T4");
+                    if (!ALLOWED_SCAN_PARAMETERS.contains(params)) {
+                        params = List.of("-sV", "-T4");
+                    }
                     var job = scanService.createScan(target, params);
                     scanService.executeScan(job.getId());
                     Map<String, Object> started = new LinkedHashMap<>();

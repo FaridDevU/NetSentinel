@@ -78,8 +78,7 @@ export class SetupPage implements OnInit, OnDestroy {
         this.statusMsg.set(progress[status]);
       } else if (status === 'READY') {
         this.stopPolling();
-        this.electron.startBackend();
-        this.runCheck();
+        this.electron.startBackend().then(() => this.runCheck()).catch(() => this.runCheck());
       } else if (status === 'NEEDS_REBOOT') {
         this.stopPolling();
         this.state.set('needs_reboot');

@@ -23,12 +23,16 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 public class ScanController {
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final java.util.regex.Pattern VALID_TARGET =
             java.util.regex.Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9.\\-:/\\[\\]]{0,99}$");
+    private static final List<List<String>> ALLOWED_SCAN_PARAMETERS = List.of(
+            List.of("-sV", "-T4", "--top-ports", "100"),
+            List.of("-sV", "-T4"),
+            List.of("-sV", "-T4", "-p-")
+    );
 
     private final ScanService scanService;
     private final ExportService exportService;
@@ -60,6 +64,10 @@ public class ScanController {
         }
 
         List<String> parameters = request.parameters() != null ? request.parameters() : List.of("-sV", "-T4");
+        if (!ALLOWED_SCAN_PARAMETERS.contains(parameters)) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(
+                    "Invalid scan profile. Accepted profiles: RAPIDO, ESTANDAR, COMPLETO"));
+        }
 
         ScanJob job = scanService.createScan(request.target().trim(), parameters);
         scanService.executeScan(job.getId());

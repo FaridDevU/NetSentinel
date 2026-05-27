@@ -41,8 +41,8 @@ export class AgentPage implements OnDestroy {
 
   messages = signal<DisplayMessage[]>([]);
   streaming = signal(false);
-  apiKey = signal(localStorage.getItem(AgentPage.KEY_STORAGE) ?? '');
-  showKeySetup = signal(!localStorage.getItem(AgentPage.KEY_STORAGE));
+  apiKey = signal(sessionStorage.getItem(AgentPage.KEY_STORAGE) ?? '');
+  showKeySetup = signal(!sessionStorage.getItem(AgentPage.KEY_STORAGE));
 
   inputText = '';
   keyInput = '';
@@ -62,14 +62,14 @@ export class AgentPage implements OnDestroy {
   saveKey(): void {
     const key = this.keyInput.trim();
     if (!key) return;
-    localStorage.setItem(AgentPage.KEY_STORAGE, key);
+    sessionStorage.setItem(AgentPage.KEY_STORAGE, key);
     this.apiKey.set(key);
     this.showKeySetup.set(false);
     this.keyInput = '';
   }
 
   resetKey(): void {
-    localStorage.removeItem(AgentPage.KEY_STORAGE);
+    sessionStorage.removeItem(AgentPage.KEY_STORAGE);
     this.apiKey.set('');
     this.showKeySetup.set(true);
   }
