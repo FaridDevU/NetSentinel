@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class SandboxService {
@@ -34,14 +35,14 @@ public class SandboxService {
 
     public record SandboxResult(boolean success, String output, String error) {}
 
-    public SandboxResult runNmap(String target, List<String> parameters) {
+    public SandboxResult runNmap(UUID executionId, String target, List<String> parameters) {
         List<String> args = new ArrayList<>(parameters);
         args.add("-oX");
         args.add("-");
-        return execute("nmap", target, args, 600);
+        return execute(executionId, "nmap", target, args, 600);
     }
 
-    public SandboxResult runGobuster(String url) {
+    public SandboxResult runGobuster(UUID executionId, String url) {
         List<String> args = List.of(
                 "dir",
                 "-w", "/usr/share/wordlists/dirb/common.txt",
@@ -50,32 +51,34 @@ public class SandboxService {
                 "-q",
                 "-u"
         );
-        return execute("gobuster", url, args, 120);
+        return execute(executionId, "gobuster", url, args, 120);
     }
 
-    public SandboxResult runNikto(String url) {
+    public SandboxResult runNikto(UUID executionId, String url) {
         List<String> args = List.of("-maxtime", "60", "-h");
-        return execute("nikto", url, args, 90);
+        return execute(executionId, "nikto", url, args, 90);
     }
 
-    public void stopRunningTools() {
-        for (String tool : List.of("nmap", "gobuster", "nikto")) {
-            try {
-                new ProcessBuilder("pkill", "-f", tool).start();
-            } catch (Exception e) {
-                log.debug("Could not stop {}: {}", tool, e.getMessage());
-            }
+    public void cancelExecution(UUID executionId) {
+        try {
+            restClient.post()
+                    .uri("/cancel/{id}", executionId.toString())
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.debug("Could not cancel sandbox execution {}: {}", executionId, e.getMessage());
         }
     }
 
-    private SandboxResult execute(String tool, String target, List<String> args, int timeoutSecs) {
+    private SandboxResult execute(UUID executionId, String tool, String target, List<String> args, int timeoutSecs) {
         log.info("Calling sandbox: tool={} target={}", tool, target);
 
         Map<String, Object> requestBody = Map.of(
                 "tool", tool,
                 "target", target,
                 "args", args,
-                "timeout_secs", timeoutSecs
+                "timeout_secs", timeoutSecs,
+                "execution_id", executionId.toString()
         );
 
         try {

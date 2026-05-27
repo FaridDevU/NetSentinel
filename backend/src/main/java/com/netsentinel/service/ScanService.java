@@ -89,6 +89,14 @@ public class ScanService {
     public void executeScan(UUID scanJobId) {
         try {
             runScan(scanJobId);
+        } catch (Exception e) {
+            log.error("Scan {} crashed: {}", scanJobId, e.getMessage(), e);
+            addLog(scanJobId, "Error interno durante el analisis: " + e.getMessage());
+            getStatus(scanJobId).ifPresent(status -> {
+                if (status.status() == ScanStatus.PENDING || status.status() == ScanStatus.RUNNING) {
+                    scanJobUpdater.markFailed(scanJobId, "Error interno durante el analisis: " + e.getMessage());
+                }
+            });
         } finally {
             persistLogs(scanJobId);
         }
@@ -102,7 +110,7 @@ public class ScanService {
         String flags = String.join(" ", job.getParameters());
         addLog(scanJobId, "Ejecutando nmap " + (flags.isBlank() ? "(por defecto)" : flags) + " ...");
 
-        SandboxService.SandboxResult result = sandboxService.runNmap(job.getTarget(), job.getParameters());
+        SandboxService.SandboxResult result = sandboxService.runNmap(scanJobId, job.getTarget(), job.getParameters());
 
         if (scanJobUpdater.isCancelled(scanJobId)) {
             addLog(scanJobId, "Analisis cancelado.");
@@ -199,7 +207,7 @@ public class ScanService {
 
                 addLog(scanJobId, "Analizando servicios web en " + host.getIp() + ":" + port.getPortNumber() + " ...");
 
-                SandboxService.SandboxResult gobusterResult = sandboxService.runGobuster(url);
+                SandboxService.SandboxResult gobusterResult = sandboxService.runGobuster(scanJobId, url);
                 if (gobusterResult.success() && gobusterResult.output() != null) {
                     List<WebFinding> gf = gobusterParserService.parse(gobusterResult.output(), host, url);
                     host.getWebFindings().addAll(gf);
@@ -210,7 +218,7 @@ public class ScanService {
                     log.debug("Gobuster skipped or failed for {}: {}", url, gobusterResult.error());
                 }
 
-                SandboxService.SandboxResult niktoResult = sandboxService.runNikto(url);
+                SandboxService.SandboxResult niktoResult = sandboxService.runNikto(scanJobId, url);
                 if (niktoResult.success() && niktoResult.output() != null) {
                     List<WebFinding> nf = niktoParserService.parse(niktoResult.output(), host, url);
                     host.getWebFindings().addAll(nf);
@@ -268,7 +276,7 @@ public class ScanService {
     public boolean cancelScan(UUID id) {
         boolean cancelled = scanJobUpdater.cancelScan(id);
         if (cancelled) {
-            sandboxService.stopRunningTools();
+            sandboxService.cancelExecution(id);
         }
         return cancelled;
     }

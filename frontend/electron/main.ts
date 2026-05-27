@@ -53,6 +53,28 @@ async function runQuickCheck(): Promise<{ wsl: boolean; kali: boolean }> {
   return { wsl, kali: ready };
 }
 
+async function backendHealthOk(timeoutMs = 3000): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch('http://localhost:8080/api/health', { signal: controller.signal });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function waitForBackend(timeoutMs = 30000): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await backendHealthOk(2000)) return true;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  return false;
+}
+
 async function runDepsCheck(): Promise<DepResult[]> {
   const results: DepResult[] = [];
 
@@ -77,6 +99,9 @@ async function runDepsCheck(): Promise<DepResult[]> {
   ], 20000);
   const pgOk = pgBuf.toString('utf8').includes('accepting connections');
   results.push({ id: 'postgresql', label: 'Almacenamiento local', ok: pgOk, detail: pgOk ? 'Listo' : 'Pendiente', technicalDetail: pgBuf.toString('utf8').trim() || 'pg_isready' });
+
+  const apiOk = await backendHealthOk();
+  results.push({ id: 'api', label: 'Aplicacion local', ok: apiOk, detail: apiOk ? 'Listo' : 'Pendiente', technicalDetail: 'GET http://localhost:8080/api/health' });
 
   return results;
 }
@@ -164,8 +189,9 @@ function setupIpcHandlers(): void {
   ipcMain.handle('window:minimize', () => mainWindow?.minimize());
   ipcMain.handle('window:close', () => mainWindow?.close());
 
-  ipcMain.handle('backend:start', () => {
+  ipcMain.handle('backend:start', async () => {
     startBackend();
+    return waitForBackend();
   });
 
   ipcMain.handle('network:local', () => getLocalNetworks());

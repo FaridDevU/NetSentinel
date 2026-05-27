@@ -3,7 +3,6 @@
   max-width: 860px;
 }
 
-/* ---- Results header ---- */
 .results-header {
   display: flex;
   align-items: center;
@@ -17,7 +16,6 @@
   color: var(--text-muted);
 }
 
-/* ---- Risk hero ---- */
 .risk-hero {
   display: flex;
   align-items: center;
@@ -94,7 +92,6 @@
 
 .hero-sep { color: var(--border); }
 
-/* ---- Section cards ---- */
 .section-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -128,7 +125,6 @@
   text-transform: none;
 }
 
-/* ---- Action list (recommendations) ---- */
 .action-list {
   list-style: none;
   display: flex;
@@ -151,7 +147,6 @@
   margin-top: 2px;
 }
 
-/* ---- Findings ---- */
 .findings-list {
   display: flex;
   flex-direction: column;
@@ -164,7 +159,6 @@
   margin: 0;
 }
 
-/* ---- Severity dot ---- */
 .sev-dot {
   width: 8px;
   height: 8px;
@@ -193,7 +187,6 @@
   }
 }
 
-/* ---- Web findings ---- */
 .web-finding-row {
   display: flex;
   align-items: center;
@@ -253,7 +246,6 @@
   flex-shrink: 0;
 }
 
-/* ---- Technical section toggle ---- */
 .technical-toggle-row {
   display: flex;
   margin-bottom: 8px;
@@ -274,7 +266,6 @@
   &:hover { color: var(--text-secondary); }
 }
 
-/* ---- Technical section ---- */
 .technical-section {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -457,7 +448,6 @@
   &.cancelled { background: rgba(94, 94, 98, 0.15); color: var(--text-secondary); }
 }
 
-/* --- Analysis section --- */
 .analysis-section {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -669,14 +659,12 @@
 }
 
 
-/* --- Empty state --- */
 .empty-state {
   color: var(--text-secondary);
   font-size: 12.5px;
   padding: 24px 0;
 }
 
-/* --- Hosts --- */
 .hosts {
   display: flex;
   flex-direction: column;

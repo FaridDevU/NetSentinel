@@ -11,7 +11,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 public class FindingStatusController {
 
     private final FindingStatusService findingStatusService;

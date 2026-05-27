@@ -6,6 +6,7 @@ pub struct ExecuteRequest {
     pub args: Vec<String>,
     pub target: String,
     pub timeout_secs: Option<u64>,
+    pub execution_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
