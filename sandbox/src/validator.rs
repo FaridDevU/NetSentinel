@@ -56,3 +56,69 @@ pub fn validate_args(args: &[String]) -> Result<(), String> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tools_permitidos_pasan() {
+        assert!(validate_tool("nmap").is_ok());
+        assert!(validate_tool("gobuster").is_ok());
+        assert!(validate_tool("nikto").is_ok());
+    }
+
+    #[test]
+    fn tools_no_permitidos_rechazan() {
+        assert!(validate_tool("sqlmap").is_err());
+        assert!(validate_tool("bash").is_err());
+        assert!(validate_tool("").is_err());
+    }
+
+    #[test]
+    fn target_valido_acepta_ip_y_hostname() {
+        assert!(validate_target("192.168.1.1").is_ok());
+        assert!(validate_target("10.0.0.0/24").is_ok());
+        assert!(validate_target("example.com").is_ok());
+        assert!(validate_target("[::1]").is_ok());
+        assert!(validate_target("http://localhost:8080").is_ok());
+    }
+
+    #[test]
+    fn target_con_caracteres_invalidos_rechaza() {
+        assert!(validate_target("192.168.1.1; rm -rf /").is_err());
+        assert!(validate_target("$(whoami)").is_err());
+        assert!(validate_target("a | b").is_err());
+        assert!(validate_target("").is_err());
+    }
+
+    #[test]
+    fn args_seguros_pasan() {
+        let args = vec!["-sV".to_string(), "-T4".to_string()];
+        assert!(validate_args(&args).is_ok());
+    }
+
+    #[test]
+    fn args_con_caracter_prohibido_rechazan() {
+        let args = vec!["$(id)".to_string()];
+        assert!(validate_args(&args).is_err());
+
+        let args = vec!["a;b".to_string()];
+        assert!(validate_args(&args).is_err());
+
+        let args = vec!["a|b".to_string()];
+        assert!(validate_args(&args).is_err());
+    }
+
+    #[test]
+    fn demasiados_args_rechazan() {
+        let args: Vec<String> = (0..40).map(|i| format!("--arg{}", i)).collect();
+        assert!(validate_args(&args).is_err());
+    }
+
+    #[test]
+    fn target_demasiado_largo_rechaza() {
+        let long = "a".repeat(300);
+        assert!(validate_target(&long).is_err());
+    }
+}

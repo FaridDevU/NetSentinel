@@ -7,14 +7,20 @@ import com.netsentinel.dto.AgentRequest;
 import com.netsentinel.dto.ScanResultsResponse;
 import com.netsentinel.dto.ScanStatusResponse;
 import com.netsentinel.dto.PagedResponse;
+import com.netsentinel.enums.ScanProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -31,11 +37,6 @@ public class AgentService {
     private static final String MODEL = "claude-sonnet-4-6";
     private static final int MAX_TOKENS = 4096;
     private static final int MAX_ITERATIONS = 15;
-    private static final List<List<String>> ALLOWED_SCAN_PARAMETERS = List.of(
-            List.of("-sV", "-T4", "--top-ports", "100"),
-            List.of("-sV", "-T4"),
-            List.of("-sV", "-T4", "-p-")
-    );
 
     private static final String SYSTEM_PROMPT = """
             Eres NetSentinel, un consultor experto en seguridad de redes para usuarios no técnicos.
@@ -60,34 +61,68 @@ public class AgentService {
         this.scanService = scanService;
         this.networkService = networkService;
         this.objectMapper = objectMapper;
-        this.restClient = RestClient.create();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(15));
+        factory.setReadTimeout(Duration.ofMinutes(5));
+        this.restClient = RestClient.builder()
+                .requestFactory(factory)
+                .build();
     }
 
     @Async("agentExecutor")
     public void streamChat(AgentRequest request, SseEmitter emitter) {
         try {
             List<Map<String, Object>> messages = buildMessages(request.messages());
+            List<Map<String, Object>> systemBlocks = buildSystemBlocks();
+            List<Map<String, Object>> tools = buildTools();
 
             for (int i = 0; i < MAX_ITERATIONS; i++) {
                 Map<String, Object> requestBody = new LinkedHashMap<>();
                 requestBody.put("model", MODEL);
                 requestBody.put("max_tokens", MAX_TOKENS);
-                requestBody.put("system", SYSTEM_PROMPT);
-                requestBody.put("tools", buildTools());
+                requestBody.put("system", systemBlocks);
+                requestBody.put("tools", tools);
                 requestBody.put("messages", messages);
 
-                String responseBody = restClient.post()
-                        .uri(CLAUDE_API_URL)
-                        .header("x-api-key", request.apiKey())
-                        .header("anthropic-version", "2023-06-01")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(requestBody)
-                        .retrieve()
-                        .body(String.class);
+                String responseBody;
+                try {
+                    responseBody = restClient.post()
+                            .uri(CLAUDE_API_URL)
+                            .header("x-api-key", request.apiKey())
+                            .header("anthropic-version", "2023-06-01")
+                            .header("anthropic-beta", "prompt-caching-2024-07-31")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(requestBody)
+                            .retrieve()
+                            .body(String.class);
+                } catch (HttpClientErrorException.Unauthorized e) {
+                    emit(emitter, "error", Map.of("message", "API key invalida o sin acceso al modelo"));
+                    emitter.complete();
+                    return;
+                } catch (HttpClientErrorException.TooManyRequests e) {
+                    emit(emitter, "error", Map.of("message", "Anthropic devolvio 429. Reintenta en unos segundos."));
+                    emitter.complete();
+                    return;
+                } catch (HttpServerErrorException e) {
+                    emit(emitter, "error", Map.of("message",
+                            "Error temporal de Anthropic (" + e.getStatusCode().value() + "). Reintenta luego."));
+                    emitter.complete();
+                    return;
+                } catch (ResourceAccessException e) {
+                    emit(emitter, "error", Map.of("message",
+                            "No se pudo contactar a Anthropic. Revisa la conexion."));
+                    emitter.complete();
+                    return;
+                }
 
                 JsonNode response = objectMapper.readTree(responseBody);
-                JsonNode content = response.get("content");
-                String stopReason = response.get("stop_reason").asText();
+                JsonNode content = response.path("content");
+                String stopReason = response.path("stop_reason").asText("end_turn");
+                if (!content.isArray()) {
+                    emit(emitter, "error", Map.of("message", "Respuesta inesperada de Anthropic"));
+                    emitter.complete();
+                    return;
+                }
 
                 List<Map<String, Object>> assistantContent = new ArrayList<>();
                 List<Map<String, Object>> toolResults = new ArrayList<>();
@@ -181,8 +216,8 @@ public class AgentService {
                     List<String> params = input.has("parameters")
                             ? objectMapper.convertValue(input.get("parameters"), new TypeReference<>() {})
                             : List.of("-sV", "-T4");
-                    if (!ALLOWED_SCAN_PARAMETERS.contains(params)) {
-                        params = List.of("-sV", "-T4");
+                    if (!ScanProfile.isAllowed(params)) {
+                        params = ScanProfile.ESTANDAR.parameters();
                     }
                     var job = scanService.createScan(target, params);
                     scanService.executeScan(job.getId());
@@ -284,6 +319,14 @@ public class AgentService {
         return result;
     }
 
+    private List<Map<String, Object>> buildSystemBlocks() {
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("type", "text");
+        block.put("text", SYSTEM_PROMPT);
+        block.put("cache_control", Map.of("type", "ephemeral"));
+        return List.of(block);
+    }
+
     private List<Map<String, Object>> buildTools() {
         Map<String, Object> detectNetworks = new LinkedHashMap<>();
         detectNetworks.put("name", "detect_networks");
@@ -361,6 +404,7 @@ public class AgentService {
         historySchema.put("properties", historyProps);
         historySchema.put("required", List.of());
         getHistory.put("input_schema", historySchema);
+        getHistory.put("cache_control", Map.of("type", "ephemeral"));
 
         return List.of(detectNetworks, startScan, getStatus, getResults, getLogs, getHistory);
     }

@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::time::{sleep, timeout};
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
 use crate::models::{ExecuteRequest, ExecuteResponse};
@@ -158,5 +158,35 @@ fn nonempty(s: String) -> Option<String> {
         None
     } else {
         Some(s)
+    }
+}
+
+pub async fn kill_process_tree(pid: u32) {
+    #[cfg(windows)]
+    {
+        let status = tokio::process::Command::new("taskkill")
+            .args(["/T", "/F", "/PID", &pid.to_string()])
+            .status()
+            .await;
+        match status {
+            Ok(s) if s.success() => info!(pid, "taskkill envio TERM al arbol de procesos"),
+            Ok(s) => warn!(pid, code = ?s.code(), "taskkill termino con codigo no-cero"),
+            Err(e) => warn!(pid, error = %e, "no se pudo invocar taskkill"),
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        let group_term = tokio::process::Command::new("kill")
+            .args(["-TERM", &format!("-{}", pid)])
+            .status()
+            .await;
+        if let Err(e) = group_term {
+            debug!(pid, error = %e, "kill grupo TERM fallo, intentando proceso individual");
+        }
+        let _ = tokio::process::Command::new("kill")
+            .args(["-TERM", &pid.to_string()])
+            .status()
+            .await;
     }
 }

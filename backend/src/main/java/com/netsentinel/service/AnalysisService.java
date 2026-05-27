@@ -1,5 +1,6 @@
 package com.netsentinel.service;
 
+import com.netsentinel.config.RiskCatalogProperties;
 import com.netsentinel.dto.AnalysisReport;
 import com.netsentinel.dto.AnalysisReport.Finding;
 import com.netsentinel.dto.AnalysisReport.HostSummary;
@@ -15,22 +16,13 @@ import java.util.stream.Collectors;
 @Service
 public class AnalysisService {
 
-    private record ServiceRisk(String level, String reason) {}
+    private final Map<Integer, RiskCatalogProperties.ServiceRisk> knownRisks;
+    private final Set<Integer> databasePorts;
 
-    private static final Map<Integer, ServiceRisk> KNOWN_RISKS = Map.ofEntries(
-            Map.entry(21,    new ServiceRisk("MEDIUM", "FTP transmite credenciales y datos en texto claro. Una captura pasiva de red es suficiente para robar las credenciales de acceso.")),
-            Map.entry(23,    new ServiceRisk("HIGH",   "Telnet es un protocolo sin cifrado ni proteccion de integridad. Todo el trafico de sesion, incluidas las contrasenas, se transmite en texto plano.")),
-            Map.entry(445,   new ServiceRisk("HIGH",   "SMB es un vector frecuente de movimiento lateral y propagacion de ransomware. La exposicion a redes no confiables aumenta significativamente el riesgo.")),
-            Map.entry(3389,  new ServiceRisk("HIGH",   "RDP es uno de los servicios mas atacados mediante fuerza bruta y explotacion de omisiones de autenticacion.")),
-            Map.entry(5900,  new ServiceRisk("MEDIUM", "VNC puede configurarse sin autenticacion o con credenciales debiles, permitiendo acceso grafico remoto completo.")),
-            Map.entry(6379,  new ServiceRisk("HIGH",   "Redis no tiene autenticacion por defecto. Un atacante con acceso a la red puede leer, escribir o eliminar todos los datos en cache y ejecutar scripts en el servidor.")),
-            Map.entry(27017, new ServiceRisk("HIGH",   "MongoDB se despliega frecuentemente sin autenticacion. Una instancia accesible en la red expone todas las bases de datos a lectura y escritura.")),
-            Map.entry(11211, new ServiceRisk("MEDIUM", "Memcached no tiene mecanismo de autenticacion. Las instancias expuestas pueden filtrar datos de la aplicacion en cache y ser explotadas en ataques de amplificacion.")),
-            Map.entry(2375,  new ServiceRisk("CRITICAL","API TCP del daemon de Docker expuesta sin TLS. Cualquier cliente puede crear contenedores, montar el sistema de archivos del host y comprometer el sistema por completo.")),
-            Map.entry(9200,  new ServiceRisk("MEDIUM", "API REST de Elasticsearch expuesta sin autenticacion. Todos los datos indexados son accesibles y el cluster puede ser modificado por cualquier persona con acceso a la red."))
-    );
-
-    private static final Set<Integer> DATABASE_PORTS = Set.of(1433, 1521, 3306, 5432, 5984);
+    public AnalysisService(RiskCatalogProperties riskCatalog) {
+        this.knownRisks = riskCatalog.asMap();
+        this.databasePorts = riskCatalog.getDatabasePorts();
+    }
 
     public AnalysisReport analyze(String target, List<NetworkHost> hosts) {
         List<Finding> findings = new ArrayList<>();
@@ -74,19 +66,19 @@ public class AnalysisService {
                 }
                 totalCves += significantCves.size();
 
-            } else if (KNOWN_RISKS.containsKey(port.getPortNumber())) {
-                ServiceRisk risk = KNOWN_RISKS.get(port.getPortNumber());
+            } else if (knownRisks.containsKey(port.getPortNumber())) {
+                RiskCatalogProperties.ServiceRisk risk = knownRisks.get(port.getPortNumber());
                 findings.add(new Finding(
-                        risk.level(),
-                        buildServiceTitle(port),
-                        risk.reason(),
+                        risk.getLevel(),
+                        buildServiceTitle(port, risk),
+                        risk.getReason(),
                         host.getIp(),
                         port.getPortNumber(),
                         port.getService() != null ? port.getService() : "unknown",
                         List.of()
                 ));
 
-            } else if (DATABASE_PORTS.contains(port.getPortNumber())) {
+            } else if (databasePorts.contains(port.getPortNumber())) {
                 findings.add(new Finding(
                         "MEDIUM",
                         "Base de datos accesible directamente en el puerto " + port.getPortNumber(),
@@ -198,25 +190,12 @@ public class AnalysisService {
                 port.getService() != null ? port.getService() : "unknown", cveIds);
     }
 
-    private String buildServiceTitle(NetworkPort port) {
+    private String buildServiceTitle(NetworkPort port, RiskCatalogProperties.ServiceRisk risk) {
         String name = port.getService() != null ? capitalize(port.getService()) : "Servicio";
-        return name + " expuesto en el puerto " + port.getPortNumber() + " — " + getServiceRiskSuffix(port.getPortNumber());
-    }
-
-    private String getServiceRiskSuffix(int port) {
-        return switch (port) {
-            case 21 -> "protocolo en texto claro";
-            case 23 -> "acceso remoto sin cifrado";
-            case 445 -> "vector de movimiento lateral";
-            case 3389 -> "objetivo de ataques de fuerza bruta";
-            case 5900 -> "acceso grafico sin autenticacion";
-            case 6379 -> "base de datos en cache sin autenticacion";
-            case 27017 -> "base de datos sin autenticacion";
-            case 11211 -> "cache sin autenticacion";
-            case 2375 -> "API de contenedores sin autenticacion";
-            case 9200 -> "indice de busqueda sin autenticacion";
-            default -> "riesgo conocido";
-        };
+        String suffix = risk.getShortLabel() != null && !risk.getShortLabel().isBlank()
+                ? risk.getShortLabel()
+                : "riesgo conocido";
+        return name + " expuesto en el puerto " + port.getPortNumber() + " — " + suffix;
     }
 
     private String buildDbExposureDetail(String ip, NetworkPort port) {
@@ -339,7 +318,7 @@ public class AnalysisService {
             if (port == 6379) seen.add("Habilita autenticacion en Redis (requirepass) y vincula Redis a localhost o a una interfaz privada.");
             if (port == 27017) seen.add("Habilita autenticacion en MongoDB y restringe el acceso al puerto de la base de datos por IP.");
             if (port == 2375) seen.add("Desactiva inmediatamente la API TCP de Docker o aplica autenticacion TLS de cliente.");
-            if (DATABASE_PORTS.contains(port) && f.relatedCves().isEmpty()) {
+            if (databasePorts.contains(port) && f.relatedCves().isEmpty()) {
                 seen.add("Restringe el puerto de base de datos " + port + " (" + capitalize(f.service()) + ") solo a los servidores de aplicaciones autorizados mediante reglas de firewall.");
             }
         }

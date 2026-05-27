@@ -14,6 +14,9 @@ import com.netsentinel.entity.ScanJob;
 import com.netsentinel.entity.WebFinding;
 import com.netsentinel.enums.ScanStatus;
 import com.netsentinel.repository.ScanJobRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -50,6 +53,10 @@ public class ScanService {
     private final GobusterParserService gobusterParserService;
     private final NiktoParserService niktoParserService;
     private final ObjectMapper objectMapper;
+    private final Counter scansStarted;
+    private final Counter scansCompleted;
+    private final Counter scansFailed;
+    private final Timer scanDuration;
 
     public ScanService(ScanJobRepository scanJobRepository,
                        SandboxService sandboxService,
@@ -59,7 +66,8 @@ public class ScanService {
                        AnalysisService analysisService,
                        GobusterParserService gobusterParserService,
                        NiktoParserService niktoParserService,
-                       ObjectMapper objectMapper) {
+                       ObjectMapper objectMapper,
+                       MeterRegistry meterRegistry) {
         this.scanJobRepository = scanJobRepository;
         this.sandboxService = sandboxService;
         this.nmapParserService = nmapParserService;
@@ -69,6 +77,16 @@ public class ScanService {
         this.gobusterParserService = gobusterParserService;
         this.niktoParserService = niktoParserService;
         this.objectMapper = objectMapper;
+        this.scansStarted = Counter.builder("netsentinel.scans.started")
+                .description("Total de escaneos iniciados").register(meterRegistry);
+        this.scansCompleted = Counter.builder("netsentinel.scans.completed")
+                .description("Total de escaneos completados con exito").register(meterRegistry);
+        this.scansFailed = Counter.builder("netsentinel.scans.failed")
+                .description("Total de escaneos fallidos").register(meterRegistry);
+        this.scanDuration = Timer.builder("netsentinel.scans.duration")
+                .description("Duracion total de los escaneos")
+                .publishPercentiles(0.5, 0.95, 0.99)
+                .register(meterRegistry);
     }
 
     @Transactional
@@ -87,9 +105,13 @@ public class ScanService {
 
     @Async("scanExecutor")
     public void executeScan(UUID scanJobId) {
+        scansStarted.increment();
+        Timer.Sample sample = Timer.start();
+        boolean failed = false;
         try {
             runScan(scanJobId);
         } catch (Exception e) {
+            failed = true;
             log.error("Scan {} crashed: {}", scanJobId, e.getMessage(), e);
             addLog(scanJobId, "Error interno durante el analisis: " + e.getMessage());
             getStatus(scanJobId).ifPresent(status -> {
@@ -98,6 +120,15 @@ public class ScanService {
                 }
             });
         } finally {
+            sample.stop(scanDuration);
+            if (failed) {
+                scansFailed.increment();
+            } else {
+                getStatus(scanJobId).ifPresent(status -> {
+                    if (status.status() == ScanStatus.COMPLETED) scansCompleted.increment();
+                    else if (status.status() == ScanStatus.FAILED) scansFailed.increment();
+                });
+            }
             persistLogs(scanJobId);
         }
     }

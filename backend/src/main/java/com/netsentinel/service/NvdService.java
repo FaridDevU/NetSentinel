@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netsentinel.entity.CveEntry;
 import com.netsentinel.entity.NetworkPort;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -47,10 +52,11 @@ public class NvdService {
             .maximumSize(500)
             .expireAfterWrite(6, TimeUnit.HOURS)
             .build();
-    private final Object rateLimitLock = new Object();
-    private long lastRequestTime = 0;
 
-    private record CveCacheData(
+    private final Semaphore rateLimiter = new Semaphore(1, true);
+    private ScheduledExecutorService rateScheduler;
+
+    record CveCacheData(
             String cveId,
             String description,
             Double cvssScore,
@@ -82,19 +88,35 @@ public class NvdService {
         return result.stream().map(d -> toCveEntry(d, port)).toList();
     }
 
-    private void applyRateLimit() {
+    @PostConstruct
+    void initRateLimiter() {
         long interval = (apiKey != null && !apiKey.isBlank()) ? INTERVAL_WITH_KEY_MS : INTERVAL_NO_KEY_MS;
-        synchronized (rateLimitLock) {
-            long now = System.currentTimeMillis();
-            long waitMs = interval - (now - lastRequestTime);
-            if (waitMs > 0) {
-                try {
-                    Thread.sleep(waitMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            lastRequestTime = System.currentTimeMillis();
+        rateScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "nvd-rate-limiter");
+            t.setDaemon(true);
+            return t;
+        });
+        rateScheduler.scheduleAtFixedRate(this::releasePermit, interval, interval, TimeUnit.MILLISECONDS);
+    }
+
+    @PreDestroy
+    void shutdownRateLimiter() {
+        if (rateScheduler != null) {
+            rateScheduler.shutdownNow();
+        }
+    }
+
+    private void releasePermit() {
+        if (rateLimiter.availablePermits() == 0) {
+            rateLimiter.release();
+        }
+    }
+
+    private void applyRateLimit() {
+        try {
+            rateLimiter.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -144,7 +166,7 @@ public class NvdService {
         }
     }
 
-    private List<CveCacheData> parseCveResponse(String body) {
+    List<CveCacheData> parseCveResponse(String body) {
         List<CveCacheData> entries = new ArrayList<>();
         try {
             JsonNode root = mapper.readTree(body);
