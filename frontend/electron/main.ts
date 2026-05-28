@@ -261,10 +261,10 @@ async function createWindow(): Promise<void> {
   Menu.setApplicationMenu(null);
 
   mainWindow = new BrowserWindow({
-    width: 420,
-    height: 460,
-    minWidth: 420,
-    minHeight: 460,
+    width: 460,
+    height: 640,
+    minWidth: 460,
+    minHeight: 640,
     resizable: false,
     frame: false,
     transparent: false,
