@@ -7,6 +7,23 @@
   margin-bottom: 16px;
 }
 
+.scan-hero {
+  height: 210px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #090d10;
+}
+
+.scan-hero img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
 .page-title {
   font-size: 18px;
   font-weight: 600;
@@ -498,6 +515,22 @@
   font-size: 13px;
   color: var(--danger);
   font-family: 'JetBrains Mono', monospace;
+}
+
+.error-block-visual {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+}
+
+.error-block-visual img {
+  width: 86px;
+  height: 58px;
+  border-radius: 4px;
+  object-fit: cover;
+  opacity: 0.9;
 }
 
 .terminal-toggle {

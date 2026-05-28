@@ -238,5 +238,22 @@
 .empty-msg {
   font-size: 13.5px;
   color: var(--text-muted);
-  padding: 10px 0;
+  padding: 0;
+}
+
+.empty-panel {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  align-items: center;
+  gap: 16px;
+  min-height: 132px;
+}
+
+.empty-panel img {
+  width: 118px;
+  height: 118px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  object-fit: cover;
+  opacity: 0.9;
 }
