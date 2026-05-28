@@ -20,6 +20,7 @@
   @if (!loading() && !error() && data()) {
     @if (data()!.content.length === 0) {
       <div class="empty-state">
+        <img src="ui/netsentinel-empty-radar.png" alt="" />
         <p>{{ 'history.empty' | t }}</p>
         <a routerLink="/scan">{{ 'history.startFirst' | t }}</a>
       </div>

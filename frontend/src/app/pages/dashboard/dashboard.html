@@ -61,7 +61,10 @@
     <div class="section-card">
       <div class="section-label">{{ 'dashboard.recentScans' | t }}</div>
       @if (data()!.recentScans.length === 0) {
-        <p class="empty-msg">{{ 'dashboard.noScans' | t }}</p>
+        <div class="empty-panel">
+          <img src="ui/netsentinel-empty-radar.png" alt="" />
+          <p class="empty-msg">{{ 'dashboard.noScans' | t }}</p>
+        </div>
       } @else {
         <div class="recent-list">
           @for (scan of data()!.recentScans; track scan.id) {
