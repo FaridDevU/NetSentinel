@@ -8,6 +8,7 @@ import com.netsentinel.dto.ScanStatusResponse;
 import com.netsentinel.entity.ScanJob;
 import com.netsentinel.enums.ScanProfile;
 import com.netsentinel.enums.ScanStatus;
+import com.netsentinel.config.SandboxHealthIndicator;
 import com.netsentinel.exception.ApiException;
 import com.netsentinel.exception.ErrorCode;
 import com.netsentinel.service.ExportService;
@@ -20,6 +21,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,18 +40,35 @@ public class ScanController {
     private final ExportService exportService;
     private final ScanCompareService compareService;
     private final NetworkService networkService;
+    private final SandboxHealthIndicator sandboxHealth;
+    private final DataSource dataSource;
 
     public ScanController(ScanService scanService, ExportService exportService,
-                          ScanCompareService compareService, NetworkService networkService) {
+                          ScanCompareService compareService, NetworkService networkService,
+                          SandboxHealthIndicator sandboxHealth, DataSource dataSource) {
         this.scanService = scanService;
         this.exportService = exportService;
         this.compareService = compareService;
         this.networkService = networkService;
+        this.sandboxHealth = sandboxHealth;
+        this.dataSource = dataSource;
     }
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
-        return ResponseEntity.ok(Map.of("status", "ok"));
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("status", "ok");
+        body.put("database", databaseReachable() ? "up" : "down");
+        body.put("sandbox", sandboxHealth.isReachable() ? "up" : "down");
+        return ResponseEntity.ok(body);
+    }
+
+    private boolean databaseReachable() {
+        try (Connection connection = dataSource.getConnection()) {
+            return connection.isValid(2);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @PostMapping("/scan/start")

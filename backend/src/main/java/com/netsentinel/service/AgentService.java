@@ -10,6 +10,7 @@ import com.netsentinel.dto.PagedResponse;
 import com.netsentinel.enums.ScanProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -57,16 +58,24 @@ public class AgentService {
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
+    @Autowired
     public AgentService(ScanService scanService, NetworkService networkService, ObjectMapper objectMapper) {
+        this(scanService, networkService, objectMapper, defaultRestClientBuilder());
+    }
+
+    AgentService(ScanService scanService, NetworkService networkService, ObjectMapper objectMapper,
+                 RestClient.Builder restClientBuilder) {
         this.scanService = scanService;
         this.networkService = networkService;
         this.objectMapper = objectMapper;
+        this.restClient = restClientBuilder.build();
+    }
+
+    private static RestClient.Builder defaultRestClientBuilder() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(15));
         factory.setReadTimeout(Duration.ofMinutes(5));
-        this.restClient = RestClient.builder()
-                .requestFactory(factory)
-                .build();
+        return RestClient.builder().requestFactory(factory);
     }
 
     @Async("agentExecutor")

@@ -3,6 +3,7 @@ import { join } from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { networkInterfaces } from 'os';
+import { randomUUID } from 'crypto';
 
 let mainWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
@@ -202,11 +203,21 @@ function setupIpcHandlers(): void {
     return new Promise<void>((resolve) => {
       const proc = spawn('wsl', [
         '-d', 'kali-linux', '--', 'bash', '-c',
-        `mkdir -p ~/.netsentinel && printf 'NVD_API_KEY=%s\\n' '${key}' > ~/.netsentinel/config.env`
+        `mkdir -p ~/.netsentinel && touch ~/.netsentinel/config.env && sed -i '/^NVD_API_KEY=/d' ~/.netsentinel/config.env && printf 'NVD_API_KEY=%s\\n' '${key}' >> ~/.netsentinel/config.env`
       ], { stdio: 'ignore' });
       proc.on('close', () => resolve());
       proc.on('error', () => resolve());
     });
+  });
+}
+
+function ensureSandboxToken(): Promise<void> {
+  const token = randomUUID().replace(/-/g, '');
+  const script = `mkdir -p ~/.netsentinel && touch ~/.netsentinel/config.env && grep -q '^SANDBOX_AUTH_TOKEN=' ~/.netsentinel/config.env || printf 'SANDBOX_AUTH_TOKEN=%s\\n' '${token}' >> ~/.netsentinel/config.env`;
+  return new Promise<void>((resolve) => {
+    const proc = spawn('wsl', ['-d', 'kali-linux', '--', 'bash', '-c', script], { stdio: 'ignore' });
+    proc.on('close', () => resolve());
+    proc.on('error', () => resolve());
   });
 }
 
@@ -310,6 +321,7 @@ setupIpcHandlers();
 
 app.whenReady().then(async () => {
   app.setAppUserModelId('com.netsentinel.app');
+  await ensureSandboxToken();
   startBackend();
   await createWindow();
 
