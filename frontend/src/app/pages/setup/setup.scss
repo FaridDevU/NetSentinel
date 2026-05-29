@@ -10,6 +10,30 @@
   z-index: 100;
 }
 
+.setup-lang-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  min-width: 30px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: color 150ms ease, border-color 150ms ease;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: rgba(84, 84, 88, 0.8);
+  }
+}
+
 .win-close-btn {
   position: absolute;
   top: 12px;
