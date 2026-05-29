@@ -1,5 +1,6 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output, signal } from '@angular/core';
+import { Component, EventEmitter, inject, OnDestroy, OnInit, Output, signal } from '@angular/core';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { LangService } from '../../services/lang.service';
 import { LucideCheck, LucideX } from '@lucide/angular';
 
 interface DepResult {
@@ -20,6 +21,8 @@ type SetupState = 'checking' | 'missing' | 'installing' | 'ready' | 'needs_reboo
 })
 export class SetupPage implements OnInit, OnDestroy {
   @Output() done = new EventEmitter<void>();
+
+  readonly lang = inject(LangService);
 
   state = signal<SetupState>('checking');
   deps = signal<DepResult[]>([]);
@@ -90,7 +93,15 @@ export class SetupPage implements OnInit, OnDestroy {
   }
 
   verifyNow(): void {
-    this.pollStatus();
+    this.electron.checkDeps().then((results: DepResult[]) => {
+      this.deps.set(results);
+      if (results.length > 0 && results.every((d) => d.ok)) {
+        this.stopPolling();
+        this.state.set('ready');
+      } else {
+        this.pollStatus();
+      }
+    }).catch(() => this.pollStatus());
   }
 
   reboot(): void {

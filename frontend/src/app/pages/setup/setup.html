@@ -1,4 +1,7 @@
 <div class="setup-overlay">
+  <button class="setup-lang-toggle" (click)="lang.toggle()">
+    {{ lang.lang() === 'es' ? 'EN' : 'ES' }}
+  </button>
   <button class="win-close-btn" (click)="closeApp()">
     <svg lucideX size="12"></svg>
   </button>
