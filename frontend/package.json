@@ -27,7 +27,7 @@
     "afterPack": "build-resources/after-pack.js",
     "extraResources": [
       {
-        "from": "../backend/target/backend-0.0.1-SNAPSHOT.jar",
+        "from": "../backend/target/backend-0.1.0.jar",
         "to": "backend.jar"
       },
       {
