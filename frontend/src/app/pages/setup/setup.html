@@ -23,6 +23,15 @@
       </div>
     }
 
+    @if (state() === 'starting') {
+      <div class="setup-body-section">
+        <h2 class="setup-title">{{ 'setup.starting.title' | t }}</h2>
+        <div class="spinner-lg"></div>
+        <p class="setup-msg">{{ 'setup.starting.body' | t }}</p>
+        <button class="btn-ghost-setup" (click)="verifyEngine()">{{ 'setup.btn.verify' | t }}</button>
+      </div>
+    }
+
     @if (state() === 'missing') {
       <div class="setup-body-section">
         <h2 class="setup-title">{{ 'setup.missing.title' | t }}</h2>
@@ -36,8 +45,8 @@
                   <svg lucideX size="12" strokeWidth="3"></svg>
                 }
               </span>
-              <span class="dep-label">{{ dep.label }}</span>
-              <span [class]="'dep-detail ' + (dep.ok ? 'ok' : 'fail')">{{ dep.detail }}</span>
+              <span class="dep-label">{{ ('setup.dep.' + dep.id) | t }}</span>
+              <span [class]="'dep-detail ' + (dep.ok ? 'ok' : 'fail')">{{ (dep.ok ? 'setup.dep.ready' : 'setup.dep.pending') | t }}</span>
             </div>
           }
         </div>
