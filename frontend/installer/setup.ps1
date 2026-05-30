@@ -130,7 +130,7 @@ for i in $(seq 1 15); do
     sleep 1
 done
 
-fuser -k 7878/tcp 2>/dev/null || true
+pkill -f "$HOME/.netsentinel/sandbox" 2>/dev/null || true
 sleep 1
 nohup "$HOME/.netsentinel/sandbox" > "$HOME/.netsentinel/sandbox.log" 2>&1 &
 sleep 1
