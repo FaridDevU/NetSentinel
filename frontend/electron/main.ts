@@ -211,9 +211,14 @@ function setupIpcHandlers(): void {
   });
 }
 
-function ensureSandboxToken(): Promise<void> {
+function ensureConfig(): Promise<void> {
   const token = randomUUID().replace(/-/g, '');
-  const script = `mkdir -p ~/.netsentinel && touch ~/.netsentinel/config.env && grep -q '^SANDBOX_AUTH_TOKEN=' ~/.netsentinel/config.env || printf 'SANDBOX_AUTH_TOKEN=%s\\n' '${token}' >> ~/.netsentinel/config.env`;
+  const script = [
+    'mkdir -p ~/.netsentinel',
+    'touch ~/.netsentinel/config.env',
+    `grep -q '^SANDBOX_AUTH_TOKEN=' ~/.netsentinel/config.env || printf 'SANDBOX_AUTH_TOKEN=%s\\n' '${token}' >> ~/.netsentinel/config.env`,
+    `grep -q '^SERVER_ADDRESS=' ~/.netsentinel/config.env || printf 'SERVER_ADDRESS=0.0.0.0\\n' >> ~/.netsentinel/config.env`,
+  ].join('; ');
   return new Promise<void>((resolve) => {
     const proc = spawn('wsl', ['-d', 'kali-linux', '--', 'bash', '-c', script], { stdio: 'ignore' });
     proc.on('close', () => resolve());
@@ -321,7 +326,7 @@ setupIpcHandlers();
 
 app.whenReady().then(async () => {
   app.setAppUserModelId('com.netsentinel.app');
-  await ensureSandboxToken();
+  await ensureConfig();
   startBackend();
   await createWindow();
 
