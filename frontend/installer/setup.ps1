@@ -130,10 +130,10 @@ for i in $(seq 1 15); do
     sleep 1
 done
 
-if ! pgrep -f "$HOME/.netsentinel/sandbox" > /dev/null 2>&1; then
-    nohup "$HOME/.netsentinel/sandbox" > "$HOME/.netsentinel/sandbox.log" 2>&1 &
-    sleep 1
-fi
+fuser -k 7878/tcp 2>/dev/null || true
+sleep 1
+nohup "$HOME/.netsentinel/sandbox" > "$HOME/.netsentinel/sandbox.log" 2>&1 &
+sleep 1
 
 exec java -jar "$HOME/.netsentinel/backend.jar" >> "$HOME/.netsentinel/backend.log" 2>&1
 '@

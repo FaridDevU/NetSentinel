@@ -93,7 +93,7 @@
     @if (state() === 'error') {
       <div class="setup-body-section">
         <h2 class="setup-title">{{ 'setup.error.title' | t }}</h2>
-        <p class="setup-msg">{{ 'setup.error.body' | t }}</p>
+        <p class="setup-msg">{{ errorBodyKey() | t }}</p>
         <button class="technical-toggle" (click)="toggleTechnicalDetails()">
           {{ showTechnicalDetails() ? ('setup.technical.hide' | t) : ('setup.technical.show' | t) }}
         </button>
