@@ -24,15 +24,20 @@ export class SetupPage implements OnInit, OnDestroy {
 
   readonly lang = inject(LangService);
 
+  private static readonly UAC_TIMEOUT_MS = 25000;
+
   state = signal<SetupState>('checking');
   deps = signal<DepResult[]>([]);
   statusMsg = signal('');
+  errorBodyKey = signal('setup.error.body');
   setupDetail = signal('');
   showTechnicalDetails = signal(false);
   nvdKey = '';
   nvdSaved = signal(false);
 
   private pollTimer?: ReturnType<typeof setInterval>;
+  private installStartedAt = 0;
+  private sawProgress = false;
 
   private get electron(): any {
     return (window as any).electron;
@@ -61,6 +66,9 @@ export class SetupPage implements OnInit, OnDestroy {
     this.statusMsg.set('');
     this.setupDetail.set('');
     this.showTechnicalDetails.set(false);
+    this.errorBodyKey.set('setup.error.body');
+    this.installStartedAt = Date.now();
+    this.sawProgress = false;
     this.state.set('installing');
     this.electron.runSetup();
     this.pollTimer = setInterval(() => this.pollStatus(), 3000);
@@ -78,15 +86,24 @@ export class SetupPage implements OnInit, OnDestroy {
         'CREATING_SCRIPTS': 'setup.progress.scripts',
       };
       if (progress[status]) {
+        this.sawProgress = true;
         this.statusMsg.set(progress[status]);
       } else if (status === 'READY') {
+        this.sawProgress = true;
         this.stopPolling();
         this.electron.startBackend().then(() => this.runCheck()).catch(() => this.runCheck());
       } else if (status === 'NEEDS_REBOOT') {
+        this.sawProgress = true;
         this.stopPolling();
         this.state.set('needs_reboot');
       } else if (status.endsWith('_FAILED') || status === 'SETUP_FAILED') {
+        this.sawProgress = true;
         this.stopPolling();
+        this.errorBodyKey.set('setup.error.body');
+        this.state.set('error');
+      } else if (!this.sawProgress && Date.now() - this.installStartedAt > SetupPage.UAC_TIMEOUT_MS) {
+        this.stopPolling();
+        this.errorBodyKey.set('setup.error.uac');
         this.state.set('error');
       }
     }).catch(() => {});
