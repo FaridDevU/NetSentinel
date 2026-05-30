@@ -78,6 +78,10 @@ jobs:
         working-directory: frontend
         run: npm ci --no-audit --no-fund
 
+      - name: Ejecutar tests
+        working-directory: frontend
+        run: npm test -- --no-watch
+
       - name: Compilar Angular
         working-directory: frontend
         run: npm run build -- --configuration=production
