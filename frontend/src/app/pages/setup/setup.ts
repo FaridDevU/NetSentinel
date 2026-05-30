@@ -11,7 +11,7 @@ interface DepResult {
   technicalDetail?: string;
 }
 
-type SetupState = 'checking' | 'missing' | 'installing' | 'ready' | 'needs_reboot' | 'error';
+type SetupState = 'checking' | 'missing' | 'installing' | 'starting' | 'ready' | 'needs_reboot' | 'error';
 
 @Component({
   selector: 'app-setup',
@@ -38,6 +38,7 @@ export class SetupPage implements OnInit, OnDestroy {
   private pollTimer?: ReturnType<typeof setInterval>;
   private installStartedAt = 0;
   private sawProgress = false;
+  private engineRetries = 0;
 
   private get electron(): any {
     return (window as any).electron;
@@ -55,10 +56,50 @@ export class SetupPage implements OnInit, OnDestroy {
     this.state.set('checking');
     this.electron.checkDeps().then((results: DepResult[]) => {
       this.deps.set(results);
-      const allOk = results.length > 0 && results.every((d) => d.ok);
-      this.state.set(allOk ? 'ready' : 'missing');
+      if (results.length > 0 && results.every((d) => d.ok)) {
+        this.engineRetries = 0;
+        this.state.set('ready');
+        return;
+      }
+      const infra = results.filter((d) => d.id !== 'api');
+      const apiDep = results.find((d) => d.id === 'api');
+      const infraInstalled = infra.length > 0 && infra.every((d) => d.ok);
+      if (infraInstalled && apiDep && !apiDep.ok) {
+        this.startEngine();
+      } else {
+        this.engineRetries = 0;
+        this.state.set('missing');
+      }
     }).catch(() => {
       this.state.set('missing');
+    });
+  }
+
+  private startEngine(): void {
+    this.state.set('starting');
+    if (!this.electron?.startBackend) {
+      this.state.set('missing');
+      return;
+    }
+    this.electron.startBackend().then((ok: boolean) => {
+      if (ok) {
+        this.engineRetries = 0;
+        this.runCheck();
+      } else if (this.engineRetries < 2) {
+        this.engineRetries++;
+        this.startEngine();
+      } else {
+        this.engineRetries = 0;
+        this.state.set('missing');
+      }
+    }).catch(() => {
+      if (this.engineRetries < 2) {
+        this.engineRetries++;
+        this.startEngine();
+      } else {
+        this.engineRetries = 0;
+        this.state.set('missing');
+      }
     });
   }
 
@@ -107,6 +148,11 @@ export class SetupPage implements OnInit, OnDestroy {
         this.state.set('error');
       }
     }).catch(() => {});
+  }
+
+  verifyEngine(): void {
+    this.engineRetries = 0;
+    this.runCheck();
   }
 
   verifyNow(): void {
