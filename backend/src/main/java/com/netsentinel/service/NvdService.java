@@ -35,6 +35,8 @@ public class NvdService {
     private static final int MAX_RESULTS = 20;
     private static final long INTERVAL_NO_KEY_MS = 6200;
     private static final long INTERVAL_WITH_KEY_MS = 700;
+    private static final long DEFAULT_RETRY_AFTER_MS = 6200;
+    private static final long MAX_RETRY_AFTER_MS = 20_000;
 
     @Value("${nvd.api.base-url}")
     private String baseUrl;
@@ -140,9 +142,10 @@ public class NvdService {
             );
 
             if (response.statusCode() == 429) {
-                log.warn("NVD API rate limit hit (429), reintentando en 30s...");
+                long backoffMs = retryAfterMs(response);
+                log.warn("NVD API rate limit hit (429), reintentando en {} ms...", backoffMs);
                 try {
-                    Thread.sleep(30_000);
+                    Thread.sleep(backoffMs);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     return List.of();
@@ -164,6 +167,19 @@ public class NvdService {
             log.warn("Failed to query NVD for '{}': {}", query, e.getMessage());
             return List.of();
         }
+    }
+
+    private long retryAfterMs(HttpResponse<String> response) {
+        return response.headers().firstValue("Retry-After")
+                .map(value -> {
+                    try {
+                        long seconds = Long.parseLong(value.trim());
+                        return Math.min(Math.max(seconds, 1) * 1000, MAX_RETRY_AFTER_MS);
+                    } catch (NumberFormatException e) {
+                        return DEFAULT_RETRY_AFTER_MS;
+                    }
+                })
+                .orElse(DEFAULT_RETRY_AFTER_MS);
     }
 
     List<CveCacheData> parseCveResponse(String body) {
