@@ -277,7 +277,9 @@ Ver los [issues abiertos](../../issues) para el detalle.
 
 ## Licencia
 
-Este repositorio aun no declara una licencia publica. Todos los derechos reservados por el autor hasta que se defina una.
+Distribuido bajo licencia MIT. Ver [`LICENSE`](LICENSE).
+
+[![License](https://img.shields.io/github/license/FaridDevU/NetSentinel?style=flat-square)](LICENSE)
 
 <div align="center">
 <sub>Repositorio: <a href="https://github.com/FaridDevU/NetSentinel">github.com/FaridDevU/NetSentinel</a></sub>
