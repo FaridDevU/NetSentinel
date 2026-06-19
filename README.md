@@ -237,24 +237,9 @@ Cobertura actual: backend con tests unitarios y de integracion (`ScanServiceInte
 
 ## Estructura del proyecto
 
-```
-.
-├── backend/                 Spring Boot + Java 21 (API, analisis, NVD, agente)
-│   ├── src/main/java/com/netsentinel/
-│   │   ├── controller/      endpoints REST
-│   │   ├── service/         logica de negocio
-│   │   └── ...
-│   └── pom.xml
-├── frontend/                Angular 21 + Electron 42
-│   ├── src/                 interfaz Angular
-│   ├── electron/            main process (IPC, arranque del backend)
-│   └── installer/           setup.ps1 y recursos NSIS
-├── sandbox/                 servicio Rust (Axum) que ejecuta en Kali
-│   ├── src/
-│   └── Cargo.toml
-├── .github/workflows/       CI (ci.yml)
-└── README.md
-```
+
+<img width="2712" height="3468" alt="diagram" src="https://github.com/user-attachments/assets/ef1eea99-823e-4d12-9fe1-540a3fae57dc" />
+
 
 ---
 
