@@ -50,7 +50,8 @@ pub fn validate_args(args: &[String]) -> Result<(), String> {
             return Err(format!("Argument '{}' contains forbidden character", arg));
         }
         if arg.len() > 512 {
-            return Err(format!("Argument too long: '{}'", &arg[..32]));
+            let preview: String = arg.chars().take(32).collect();
+            return Err(format!("Argument too long: '{}'", preview));
         }
     }
 
@@ -62,21 +63,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tools_permitidos_pasan() {
+    fn allowed_tools_pass() {
         assert!(validate_tool("nmap").is_ok());
         assert!(validate_tool("gobuster").is_ok());
         assert!(validate_tool("nikto").is_ok());
     }
 
     #[test]
-    fn tools_no_permitidos_rechazan() {
+    fn disallowed_tools_are_rejected() {
         assert!(validate_tool("sqlmap").is_err());
         assert!(validate_tool("bash").is_err());
         assert!(validate_tool("").is_err());
     }
 
     #[test]
-    fn target_valido_acepta_ip_y_hostname() {
+    fn valid_target_accepts_ip_and_hostname() {
         assert!(validate_target("192.168.1.1").is_ok());
         assert!(validate_target("10.0.0.0/24").is_ok());
         assert!(validate_target("example.com").is_ok());
@@ -85,7 +86,7 @@ mod tests {
     }
 
     #[test]
-    fn target_con_caracteres_invalidos_rechaza() {
+    fn target_with_invalid_chars_is_rejected() {
         assert!(validate_target("192.168.1.1; rm -rf /").is_err());
         assert!(validate_target("$(whoami)").is_err());
         assert!(validate_target("a | b").is_err());
@@ -93,13 +94,13 @@ mod tests {
     }
 
     #[test]
-    fn args_seguros_pasan() {
+    fn safe_args_pass() {
         let args = vec!["-sV".to_string(), "-T4".to_string()];
         assert!(validate_args(&args).is_ok());
     }
 
     #[test]
-    fn args_con_caracter_prohibido_rechazan() {
+    fn args_with_forbidden_char_are_rejected() {
         let args = vec!["$(id)".to_string()];
         assert!(validate_args(&args).is_err());
 
@@ -111,14 +112,20 @@ mod tests {
     }
 
     #[test]
-    fn demasiados_args_rechazan() {
+    fn too_many_args_are_rejected() {
         let args: Vec<String> = (0..40).map(|i| format!("--arg{}", i)).collect();
         assert!(validate_args(&args).is_err());
     }
 
     #[test]
-    fn target_demasiado_largo_rechaza() {
+    fn too_long_target_is_rejected() {
         let long = "a".repeat(300);
         assert!(validate_target(&long).is_err());
+    }
+
+    #[test]
+    fn oversized_multibyte_arg_is_rejected_without_panic() {
+        let args = vec!["\u{20AC}".repeat(200)];
+        assert!(validate_args(&args).is_err());
     }
 }
