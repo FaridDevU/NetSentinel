@@ -139,7 +139,7 @@ fn check_auth(
     if provided == state.auth_token.as_str() {
         Ok(())
     } else {
-        warn!("Sandbox auth rechazado: header invalido o ausente");
+        warn!("Sandbox auth rejected: invalid or missing header");
         Err((
             StatusCode::UNAUTHORIZED,
             Json(ExecuteResponse {
