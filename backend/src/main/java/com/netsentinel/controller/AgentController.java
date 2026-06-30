@@ -22,7 +22,7 @@ public class AgentController {
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chat(@Valid @RequestBody AgentRequest request) {
         if (request.apiKey() == null || request.apiKey().isBlank()) {
-            throw new ApiException(ErrorCode.INVALID_REQUEST, "API key requerida");
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "API key is required");
         }
         SseEmitter emitter = new SseEmitter(600_000L);
         agentService.streamChat(request, emitter);

@@ -30,13 +30,13 @@ public class FindingStatusController {
             @RequestBody StatusUpdateRequest request
     ) {
         if (request.findingKey() == null || request.findingKey().isBlank()) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("findingKey es obligatorio"));
+            return ResponseEntity.badRequest().body(new ErrorResponse("findingKey is required"));
         }
         VulnStatus status;
         try {
             status = VulnStatus.valueOf(request.status());
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse("Estado invalido: " + request.status()));
+            return ResponseEntity.badRequest().body(new ErrorResponse("Invalid status: " + request.status()));
         }
         findingStatusService.updateStatus(scanId, request.findingKey(), status);
         return ResponseEntity.ok(Map.of("scanId", scanId, "findingKey", request.findingKey(), "status", status));

@@ -7,10 +7,10 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public record AgentRequest(
-        @NotBlank(message = "La API key es obligatoria")
+        @NotBlank(message = "API key is required")
         String apiKey,
 
-        @NotEmpty(message = "Se requiere al menos un mensaje")
+        @NotEmpty(message = "At least one message is required")
         @Valid
         List<Message> messages
 ) {

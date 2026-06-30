@@ -29,9 +29,9 @@ public class ScanCompareService {
     @Transactional(readOnly = true)
     public ScanCompareResponse compare(UUID scanAId, UUID scanBId) {
         ScanJob scanA = scanJobRepository.findById(scanAId)
-                .orElseThrow(() -> new IllegalArgumentException("Scan A no encontrado: " + scanAId));
+                .orElseThrow(() -> new IllegalArgumentException("Scan A not found: " + scanAId));
         ScanJob scanB = scanJobRepository.findById(scanBId)
-                .orElseThrow(() -> new IllegalArgumentException("Scan B no encontrado: " + scanBId));
+                .orElseThrow(() -> new IllegalArgumentException("Scan B not found: " + scanBId));
 
         Map<String, AnalysisReport.Finding> findingsA = loadFindings(scanA);
         Map<String, AnalysisReport.Finding> findingsB = loadFindings(scanB);

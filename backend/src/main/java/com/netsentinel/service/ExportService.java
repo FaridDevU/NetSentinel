@@ -66,7 +66,7 @@ public class ExportService {
 
     public byte[] generateCsv(ScanResultsResponse scan, AnalysisReport analysis) {
         StringBuilder sb = new StringBuilder('﻿');
-        sb.append("Severidad,Titulo,Dispositivo,Puerto,Servicio,CVEs relacionadas,Detalle\n");
+        sb.append("Severity,Title,Device,Port,Service,Related CVEs,Detail\n");
         if (analysis != null) {
             for (AnalysisReport.Finding f : analysis.findings()) {
                 sb.append(escape(f.severity())).append(',');
@@ -91,11 +91,11 @@ public class ExportService {
 
     private String riskTitle(String level) {
         return switch (level) {
-            case "CRITICAL" -> "Riesgo critico — accion inmediata requerida";
-            case "HIGH"     -> "Riesgo alto — medidas urgentes recomendadas";
-            case "MEDIUM"   -> "Riesgo medio — revision recomendada";
-            case "LOW"      -> "Riesgo bajo — estado aceptable";
-            default         -> "Sin vulnerabilidades significativas";
+            case "CRITICAL" -> "Critical risk — immediate action required";
+            case "HIGH"     -> "High risk — urgent measures recommended";
+            case "MEDIUM"   -> "Medium risk — review recommended";
+            case "LOW"      -> "Low risk — acceptable state";
+            default         -> "No significant vulnerabilities";
         };
     }
 

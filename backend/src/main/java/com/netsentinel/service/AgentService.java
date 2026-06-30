@@ -106,21 +106,21 @@ public class AgentService {
                             .retrieve()
                             .body(String.class);
                 } catch (HttpClientErrorException.Unauthorized e) {
-                    emit(emitter, "error", Map.of("message", "API key invalida o sin acceso al modelo"));
+                    emit(emitter, "error", Map.of("message", "Invalid API key or no access to the model"));
                     emitter.complete();
                     return;
                 } catch (HttpClientErrorException.TooManyRequests e) {
-                    emit(emitter, "error", Map.of("message", "Anthropic devolvio 429. Reintenta en unos segundos."));
+                    emit(emitter, "error", Map.of("message", "Anthropic returned 429. Retry in a few seconds."));
                     emitter.complete();
                     return;
                 } catch (HttpServerErrorException e) {
                     emit(emitter, "error", Map.of("message",
-                            "Error temporal de Anthropic (" + e.getStatusCode().value() + "). Reintenta luego."));
+                            "Temporary Anthropic error (" + e.getStatusCode().value() + "). Retry later."));
                     emitter.complete();
                     return;
                 } catch (ResourceAccessException e) {
                     emit(emitter, "error", Map.of("message",
-                            "No se pudo contactar a Anthropic. Revisa la conexion."));
+                            "Could not reach Anthropic. Check your connection."));
                     emitter.complete();
                     return;
                 }
@@ -129,7 +129,7 @@ public class AgentService {
                 JsonNode content = response.path("content");
                 String stopReason = response.path("stop_reason").asText("end_turn");
                 if (!content.isArray()) {
-                    emit(emitter, "error", Map.of("message", "Respuesta inesperada de Anthropic"));
+                    emit(emitter, "error", Map.of("message", "Unexpected response from Anthropic"));
                     emitter.complete();
                     return;
                 }
@@ -197,7 +197,7 @@ public class AgentService {
         } catch (Exception e) {
             log.error("Agent stream error", e);
             try {
-                emit(emitter, "error", Map.of("message", e.getMessage() != null ? e.getMessage() : "Error desconocido"));
+                emit(emitter, "error", Map.of("message", e.getMessage() != null ? e.getMessage() : "Unknown error"));
                 emitter.complete();
             } catch (Exception ignored) {
             }
@@ -240,13 +240,13 @@ public class AgentService {
                 case "get_scan_status" -> {
                     UUID id = UUID.fromString(input.get("scanId").asText());
                     var status = scanService.getStatus(id);
-                    if (status.isEmpty()) yield "{\"error\":\"Scan no encontrado\"}";
+                    if (status.isEmpty()) yield "{\"error\":\"Scan not found\"}";
                     yield objectMapper.writeValueAsString(status.get());
                 }
                 case "get_scan_results" -> {
                     UUID id = UUID.fromString(input.get("scanId").asText());
                     var results = scanService.getResults(id);
-                    if (results.isEmpty()) yield "{\"error\":\"Scan no encontrado\"}";
+                    if (results.isEmpty()) yield "{\"error\":\"Scan not found\"}";
                     yield objectMapper.writeValueAsString(condense(results.get()));
                 }
                 case "get_scan_logs" -> {
@@ -259,7 +259,7 @@ public class AgentService {
                     PagedResponse<ScanStatusResponse> history = scanService.getHistory(page, 10);
                     yield objectMapper.writeValueAsString(history);
                 }
-                default -> "{\"error\":\"Herramienta desconocida: " + name + "\"}";
+                default -> "{\"error\":\"Unknown tool: " + name + "\"}";
             };
         } catch (Exception e) {
             log.error("Tool execution error for {}: {}", name, e.getMessage());
@@ -340,7 +340,7 @@ public class AgentService {
     private List<Map<String, Object>> buildTools() {
         Map<String, Object> detectNetworks = new LinkedHashMap<>();
         detectNetworks.put("name", "detect_networks");
-        detectNetworks.put("description", "Detecta las interfaces de red locales y sus subredes. Úsala cuando necesites saber qué redes están disponibles para escanear.");
+        detectNetworks.put("description", "Detects the local network interfaces and their subnets. Use it when you need to know which networks are available to scan.");
         Map<String, Object> detectSchema = new LinkedHashMap<>();
         detectSchema.put("type", "object");
         detectSchema.put("properties", Map.of());
@@ -349,19 +349,19 @@ public class AgentService {
 
         Map<String, Object> targetProp = new LinkedHashMap<>();
         targetProp.put("type", "string");
-        targetProp.put("description", "IP, rango CIDR o hostname a escanear");
+        targetProp.put("description", "IP, CIDR range or hostname to scan");
         Map<String, Object> paramItemsProp = new LinkedHashMap<>();
         paramItemsProp.put("type", "string");
         Map<String, Object> paramsProp = new LinkedHashMap<>();
         paramsProp.put("type", "array");
         paramsProp.put("items", paramItemsProp);
-        paramsProp.put("description", "Flags de nmap. Por defecto: [\"-sV\", \"-T4\"]");
+        paramsProp.put("description", "nmap flags. Default: [\"-sV\", \"-T4\"]");
         Map<String, Object> startScanProps = new LinkedHashMap<>();
         startScanProps.put("target", targetProp);
         startScanProps.put("parameters", paramsProp);
         Map<String, Object> startScan = new LinkedHashMap<>();
         startScan.put("name", "start_scan");
-        startScan.put("description", "Lanza un escaneo de red contra un objetivo. Devuelve el scanId para seguir el progreso.");
+        startScan.put("description", "Launches a network scan against a target. Returns the scanId to track progress.");
         Map<String, Object> startScanSchema = new LinkedHashMap<>();
         startScanSchema.put("type", "object");
         startScanSchema.put("properties", startScanProps);
@@ -370,13 +370,13 @@ public class AgentService {
 
         Map<String, Object> scanIdProp = new LinkedHashMap<>();
         scanIdProp.put("type", "string");
-        scanIdProp.put("description", "UUID del escaneo");
+        scanIdProp.put("description", "UUID of the scan");
         Map<String, Object> scanIdProps = new LinkedHashMap<>();
         scanIdProps.put("scanId", scanIdProp);
 
         Map<String, Object> getStatus = new LinkedHashMap<>();
         getStatus.put("name", "get_scan_status");
-        getStatus.put("description", "Consulta el estado actual de un escaneo por su ID.");
+        getStatus.put("description", "Queries the current status of a scan by its ID.");
         Map<String, Object> statusSchema = new LinkedHashMap<>();
         statusSchema.put("type", "object");
         statusSchema.put("properties", scanIdProps);
@@ -385,7 +385,7 @@ public class AgentService {
 
         Map<String, Object> getResults = new LinkedHashMap<>();
         getResults.put("name", "get_scan_results");
-        getResults.put("description", "Obtiene los resultados completos de un escaneo finalizado: hosts, puertos, CVEs y hallazgos web.");
+        getResults.put("description", "Retrieves the full results of a completed scan: hosts, ports, CVEs and web findings.");
         Map<String, Object> resultsSchema = new LinkedHashMap<>();
         resultsSchema.put("type", "object");
         resultsSchema.put("properties", scanIdProps);
@@ -394,7 +394,7 @@ public class AgentService {
 
         Map<String, Object> getLogs = new LinkedHashMap<>();
         getLogs.put("name", "get_scan_logs");
-        getLogs.put("description", "Obtiene los logs de progreso de un escaneo.");
+        getLogs.put("description", "Retrieves the progress logs of a scan.");
         Map<String, Object> logsSchema = new LinkedHashMap<>();
         logsSchema.put("type", "object");
         logsSchema.put("properties", scanIdProps);
@@ -403,12 +403,12 @@ public class AgentService {
 
         Map<String, Object> pageProp = new LinkedHashMap<>();
         pageProp.put("type", "integer");
-        pageProp.put("description", "Número de página (0-indexado). Por defecto: 0");
+        pageProp.put("description", "Page number (0-indexed). Default: 0");
         Map<String, Object> historyProps = new LinkedHashMap<>();
         historyProps.put("page", pageProp);
         Map<String, Object> getHistory = new LinkedHashMap<>();
         getHistory.put("name", "get_history");
-        getHistory.put("description", "Obtiene el historial de escaneos anteriores.");
+        getHistory.put("description", "Retrieves the history of previous scans.");
         Map<String, Object> historySchema = new LinkedHashMap<>();
         historySchema.put("type", "object");
         historySchema.put("properties", historyProps);

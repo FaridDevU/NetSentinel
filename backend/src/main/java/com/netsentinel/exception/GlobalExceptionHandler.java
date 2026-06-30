@@ -39,28 +39,28 @@ public class GlobalExceptionHandler {
                 .toList();
         return ResponseEntity.status(ErrorCode.INVALID_REQUEST.status())
                 .body(new ErrorResponse(ErrorCode.INVALID_REQUEST.name(),
-                        "Validacion fallida", traceId(), fields));
+                        "Validation failed", traceId(), fields));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException e) {
         return ResponseEntity.status(ErrorCode.INVALID_REQUEST.status())
                 .body(new ErrorResponse(ErrorCode.INVALID_REQUEST.name(),
-                        "Cuerpo de la peticion mal formado", traceId()));
+                        "Malformed request body", traceId()));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException e) {
         return ResponseEntity.status(ErrorCode.INVALID_REQUEST.status())
                 .body(new ErrorResponse(ErrorCode.INVALID_REQUEST.name(),
-                        "Parametro requerido: " + e.getParameterName(), traceId()));
+                        "Required parameter: " + e.getParameterName(), traceId()));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         return ResponseEntity.status(ErrorCode.INVALID_REQUEST.status())
                 .body(new ErrorResponse(ErrorCode.INVALID_REQUEST.name(),
-                        "Valor invalido para parametro: " + e.getName(), traceId()));
+                        "Invalid value for parameter: " + e.getName(), traceId()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -71,14 +71,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAny(Exception e) {
-        log.error("Excepcion no controlada", e);
+        log.error("Unhandled exception", e);
         return ResponseEntity.status(ErrorCode.INTERNAL.status())
                 .body(new ErrorResponse(ErrorCode.INTERNAL.name(),
-                        "Error interno del servidor", traceId()));
+                        "Internal server error", traceId()));
     }
 
     private static String defaultMessage(FieldError fe) {
-        return fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "valor invalido";
+        return fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "invalid value";
     }
 
     private static String traceId() {

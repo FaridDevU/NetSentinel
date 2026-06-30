@@ -18,6 +18,6 @@ public interface ScanJobRepository extends JpaRepository<ScanJob, UUID> {
 
     @Transactional
     @Modifying
-    @Query("UPDATE ScanJob j SET j.status = 'FAILED', j.errorMessage = 'Backend reiniciado durante el escaneo', j.completedAt = :now WHERE j.status IN ('PENDING', 'RUNNING')")
+    @Query("UPDATE ScanJob j SET j.status = 'FAILED', j.errorMessage = 'Backend restarted during the scan', j.completedAt = :now WHERE j.status IN ('PENDING', 'RUNNING')")
     int markStuckJobsAsFailed(@Param("now") Instant now);
 }

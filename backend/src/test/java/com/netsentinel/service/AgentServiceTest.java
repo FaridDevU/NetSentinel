@@ -43,23 +43,23 @@ class AgentServiceTest {
     }
 
     private AgentRequest request() {
-        return new AgentRequest("key-123", List.of(new AgentRequest.Message("user", "hola")));
+        return new AgentRequest("key-123", List.of(new AgentRequest.Message("user", "hi")));
     }
 
     @Test
-    void apiKeyInvalidaEmiteErrorYCompleta() {
+    void invalidApiKeyEmitsErrorAndCompletes() {
         server.expect(requestTo(URL)).andRespond(withUnauthorizedRequest());
 
         RecordingEmitter emitter = new RecordingEmitter();
         service.streamChat(request(), emitter);
 
-        assertThat(emitter.buffer.toString()).contains("error").contains("API key invalida");
+        assertThat(emitter.buffer.toString()).contains("error").contains("Invalid API key");
         assertThat(emitter.completed).isTrue();
         server.verify();
     }
 
     @Test
-    void demasiadasPeticionesEmite429() {
+    void tooManyRequestsEmits429() {
         server.expect(requestTo(URL)).andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
 
         RecordingEmitter emitter = new RecordingEmitter();
@@ -70,21 +70,21 @@ class AgentServiceTest {
     }
 
     @Test
-    void errorDeServidorEmiteMensajeTemporal() {
+    void serverErrorEmitsTemporaryMessage() {
         server.expect(requestTo(URL)).andRespond(withServerError());
 
         RecordingEmitter emitter = new RecordingEmitter();
         service.streamChat(request(), emitter);
 
-        assertThat(emitter.buffer.toString()).contains("error").contains("temporal");
+        assertThat(emitter.buffer.toString()).contains("error").contains("Temporary");
         assertThat(emitter.completed).isTrue();
     }
 
     @Test
-    void respuestaDeTextoEmiteTextoYDone() {
+    void textResponseEmitsTextAndDone() {
         String body = """
                 {
-                  "content": [{"type": "text", "text": "Tu red se ve bien"}],
+                  "content": [{"type": "text", "text": "Your network looks fine"}],
                   "stop_reason": "end_turn"
                 }
                 """;
@@ -94,25 +94,25 @@ class AgentServiceTest {
         service.streamChat(request(), emitter);
 
         String out = emitter.buffer.toString();
-        assertThat(out).contains("Tu red se ve bien");
+        assertThat(out).contains("Your network looks fine");
         assertThat(out).contains("done");
         assertThat(emitter.completed).isTrue();
     }
 
     @Test
-    void contentNoArrayEmiteErrorInesperado() {
-        String body = "{\"content\": \"no es array\", \"stop_reason\": \"end_turn\"}";
+    void nonArrayContentEmitsUnexpectedError() {
+        String body = "{\"content\": \"not an array\", \"stop_reason\": \"end_turn\"}";
         server.expect(requestTo(URL)).andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
 
         RecordingEmitter emitter = new RecordingEmitter();
         service.streamChat(request(), emitter);
 
-        assertThat(emitter.buffer.toString()).contains("error").contains("inesperada");
+        assertThat(emitter.buffer.toString()).contains("error").contains("Unexpected");
         assertThat(emitter.completed).isTrue();
     }
 
     @Test
-    void loopDeToolUseEjecutaHerramientaYContinua() throws Exception {
+    void toolUseLoopRunsToolAndContinues() throws Exception {
         when(networkService.getLocalNetworks()).thenReturn(List.of(Map.of("name", "eth0", "subnet", "192.168.0.0/24")));
 
         String first = """
@@ -123,7 +123,7 @@ class AgentServiceTest {
                 """;
         String second = """
                 {
-                  "content": [{"type": "text", "text": "Encontre tu red"}],
+                  "content": [{"type": "text", "text": "Found your network"}],
                   "stop_reason": "end_turn"
                 }
                 """;
@@ -136,7 +136,7 @@ class AgentServiceTest {
         String out = emitter.buffer.toString();
         assertThat(out).contains("tool_use").contains("detect_networks");
         assertThat(out).contains("tool_result");
-        assertThat(out).contains("Encontre tu red");
+        assertThat(out).contains("Found your network");
         assertThat(out).contains("done");
         assertThat(emitter.completed).isTrue();
         verify(networkService).getLocalNetworks();

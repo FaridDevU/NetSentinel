@@ -74,13 +74,13 @@ public class ScanController {
     @PostMapping("/scan/start")
     public ResponseEntity<?> startScan(@Valid @RequestBody ScanRequest request) {
         if (request.target() == null || request.target().isBlank()) {
-            throw new ApiException(ErrorCode.INVALID_TARGET, "El objetivo es obligatorio");
+            throw new ApiException(ErrorCode.INVALID_TARGET, "Target is required");
         }
 
         String target = request.target().trim();
         if (!VALID_TARGET.matcher(target).matches()) {
             throw new ApiException(ErrorCode.INVALID_TARGET,
-                    "Formato de objetivo invalido. Aceptado: IP, CIDR o hostname sin caracteres especiales");
+                    "Invalid target format. Accepted: IP, CIDR or hostname without special characters");
         }
 
         List<String> parameters = request.parameters() != null
@@ -88,7 +88,7 @@ public class ScanController {
                 : ScanProfile.ESTANDAR.parameters();
         if (!ScanProfile.isAllowed(parameters)) {
             throw new ApiException(ErrorCode.INVALID_SCAN_PROFILE,
-                    "Perfil de escaneo invalido. Aceptados: RAPIDO, ESTANDAR, COMPLETO");
+                    "Invalid scan profile. Accepted: RAPIDO, ESTANDAR, COMPLETO");
         }
 
         ScanJob job = scanService.createScan(target, parameters, request.language());
@@ -104,13 +104,13 @@ public class ScanController {
     @GetMapping("/scan/{id}/status")
     public ResponseEntity<ScanStatusResponse> getScanStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(scanService.getStatus(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan no encontrado: " + id)));
+                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan not found: " + id)));
     }
 
     @GetMapping("/scan/{id}/results")
     public ResponseEntity<ScanResultsResponse> getScanResults(@PathVariable UUID id) {
         return ResponseEntity.ok(scanService.getResults(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan no encontrado: " + id)));
+                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan not found: " + id)));
     }
 
     @PostMapping("/scan/{id}/cancel")
@@ -118,7 +118,7 @@ public class ScanController {
         boolean cancelled = scanService.cancelScan(id);
         if (!cancelled) {
             throw new ApiException(ErrorCode.SCAN_NOT_CANCELLABLE,
-                    "El escaneo no puede cancelarse (no encontrado o ya finalizado)");
+                    "The scan cannot be cancelled (not found or already finished)");
         }
         return ResponseEntity.ok(Map.of("id", id, "status", ScanStatus.CANCELLED));
     }
@@ -126,7 +126,7 @@ public class ScanController {
     @DeleteMapping("/scan/{id}")
     public ResponseEntity<Void> deleteScan(@PathVariable UUID id) {
         if (scanService.getStatus(id).isEmpty()) {
-            throw new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan no encontrado: " + id);
+            throw new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan not found: " + id);
         }
         scanService.deleteScan(id);
         return ResponseEntity.noContent().build();
@@ -148,7 +148,7 @@ public class ScanController {
     @GetMapping(value = "/scan/{id}/export/pdf", produces = "application/pdf")
     public ResponseEntity<byte[]> exportPdf(@PathVariable UUID id) {
         ScanResultsResponse scan = scanService.getResults(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan no encontrado: " + id));
+                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan not found: " + id));
         try {
             byte[] pdf = exportService.generatePdf(scan, scan.analysis());
             return ResponseEntity.ok()
@@ -156,14 +156,14 @@ public class ScanController {
                     .contentType(MediaType.APPLICATION_PDF)
                     .body(pdf);
         } catch (Exception e) {
-            throw new ApiException(ErrorCode.EXPORT_FAILED, "Error generando PDF: " + e.getMessage(), e);
+            throw new ApiException(ErrorCode.EXPORT_FAILED, "Error generating PDF: " + e.getMessage(), e);
         }
     }
 
     @GetMapping(value = "/scan/{id}/export/json", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<byte[]> exportJson(@PathVariable UUID id) {
         ScanResultsResponse scan = scanService.getResults(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan no encontrado: " + id));
+                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan not found: " + id));
         try {
             byte[] json = exportService.generateJson(scan);
             return ResponseEntity.ok()
@@ -171,14 +171,14 @@ public class ScanController {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json);
         } catch (Exception e) {
-            throw new ApiException(ErrorCode.EXPORT_FAILED, "Error generando JSON: " + e.getMessage(), e);
+            throw new ApiException(ErrorCode.EXPORT_FAILED, "Error generating JSON: " + e.getMessage(), e);
         }
     }
 
     @GetMapping(value = "/scan/{id}/export/csv", produces = "text/csv")
     public ResponseEntity<byte[]> exportCsv(@PathVariable UUID id) {
         ScanResultsResponse scan = scanService.getResults(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan no encontrado: " + id));
+                .orElseThrow(() -> new ApiException(ErrorCode.SCAN_NOT_FOUND, "Scan not found: " + id));
         byte[] csv = exportService.generateCsv(scan, scan.analysis());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"netsentinel-report-" + id + ".csv\"")
@@ -191,7 +191,7 @@ public class ScanController {
             @RequestParam UUID a,
             @RequestParam UUID b) {
         if (a.equals(b)) {
-            throw new ApiException(ErrorCode.INVALID_REQUEST, "Los dos IDs deben ser distintos");
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "The two IDs must be different");
         }
         try {
             return ResponseEntity.ok(compareService.compare(a, b));
@@ -206,7 +206,7 @@ public class ScanController {
             return ResponseEntity.ok(networkService.getLocalNetworks());
         } catch (Exception e) {
             throw new ApiException(ErrorCode.NETWORK_DETECTION_FAILED,
-                    "No se pudieron detectar las interfaces de red", e);
+                    "Could not detect network interfaces", e);
         }
     }
 }

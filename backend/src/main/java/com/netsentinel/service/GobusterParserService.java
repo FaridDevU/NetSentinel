@@ -58,7 +58,7 @@ public class GobusterParserService {
     }
 
     private String buildDescription(String path, int status) {
-        String statusLabel = status == 200 ? "accesible (200 OK)" : "encontrada pero restringida (403)";
-        return "Ruta web " + statusLabel + ": " + path;
+        String statusLabel = status == 200 ? "accessible (200 OK)" : "found but restricted (403)";
+        return "Web path " + statusLabel + ": " + path;
     }
 }
