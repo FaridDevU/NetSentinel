@@ -4,15 +4,15 @@
 
 # NetSentinel
 
-### Analizador de seguridad de red para usuarios no tecnicos: escanea tu red, detecta vulnerabilidades y entrega un diagnostico en lenguaje simple con instrucciones para resolver cada problema.
+### Network security analyzer for non-technical users: scans your network, detects vulnerabilities, and delivers a plain-language diagnosis with step-by-step instructions to fix each problem.
 
 [![Build](https://img.shields.io/github/actions/workflow/status/FaridDevU/NetSentinel/ci.yml?style=flat-square)](../../actions)
 [![Release](https://img.shields.io/github/v/release/FaridDevU/NetSentinel?include_prereleases&style=flat-square)](../../releases)
-[![Plataforma](https://img.shields.io/badge/plataforma-Windows%2010%2F11-blue?style=flat-square)](#requisitos-previos)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue?style=flat-square)](#prerequisites)
 [![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square)](#stack)
 [![Angular](https://img.shields.io/badge/Angular-21-red?style=flat-square)](#stack)
 
-[**Descargar instalador**](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0) · [**Arquitectura**](#arquitectura) · [**Reportar bug**](../../issues)
+[**Download installer**](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0) · [**Architecture**](#architecture) · [**Report a bug**](../../issues)
 
 </div>
 
@@ -20,14 +20,14 @@
 
 ## Quickstart
 
-Para el usuario final no hay comandos. El flujo completo es:
+There are no commands for the end user. The full flow is:
 
-1. Descargar `NetSentinel.Setup.0.1.0.exe` desde el [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0).
-2. Instalar con doble clic y abrir la aplicacion.
-3. Pulsar **Completar instalacion** y aprobar el UAC. El instalador habilita WSL2, instala Kali Linux, las herramientas, la base de datos, el backend y el sandbox de forma guiada.
-4. Pulsar **Analizar mi red** y leer el diagnostico.
+1. Download `NetSentinel.Setup.0.1.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0).
+2. Install with a double click and open the app.
+3. Press **Complete installation** and approve the UAC prompt. The installer enables WSL2 and installs Kali Linux, the tools, the database, the backend and the sandbox in a guided way.
+4. Press **Analyze my network** and read the diagnosis.
 
-El backend expone una API REST local en `http://localhost:8080`. Un escaneo se inicia asi:
+The backend exposes a local REST API at `http://localhost:8080`. A scan is started like this:
 
 ```bash
 curl -X POST http://localhost:8080/api/scan/start \
@@ -41,122 +41,122 @@ curl -X POST http://localhost:8080/api/scan/start \
 
 ---
 
-## Tabla de contenidos
-- [Por que este proyecto](#por-que-este-proyecto)
-- [Caracteristicas](#caracteristicas)
-- [Arquitectura](#arquitectura)
+## Table of contents
+- [Why this project](#why-this-project)
+- [Features](#features)
+- [Architecture](#architecture)
 - [Stack](#stack)
-- [Instalacion](#instalacion)
-- [Uso](#uso)
+- [Installation](#installation)
+- [Usage](#usage)
 - [API](#api)
 - [Tests](#tests)
-- [Estructura del proyecto](#estructura-del-proyecto)
+- [Project structure](#project-structure)
 - [Roadmap](#roadmap)
-- [Licencia](#licencia)
+- [License](#license)
 
 ---
 
-## Por que este proyecto
+## Why this project
 
-La mayoria de las herramientas de seguridad de red (Nmap, Nikto, Gobuster, Metasploit) son potentes pero exigen conocimiento tecnico: interpretar puertos, servicios, versiones y CVEs. NetSentinel cierra esa brecha. Empaqueta un entorno Kali Linux completo dentro de una aplicacion de escritorio para Windows, ejecuta las herramientas en un sandbox controlado y traduce los resultados a un diagnostico accionable en espanol. El objetivo es que cualquier persona pueda auditar su propia red con un solo boton, sin abrir una terminal ni instalar dependencias a mano.
+Most network security tools (Nmap, Nikto, Gobuster, Metasploit) are powerful but require technical knowledge: interpreting ports, services, versions and CVEs. NetSentinel closes that gap. It packages a complete Kali Linux environment inside a Windows desktop app, runs the tools in a controlled sandbox, and translates the results into an actionable, plain-language diagnosis. The goal is for anyone to be able to audit their own network with a single button, without opening a terminal or installing dependencies by hand.
 
-El proyecto tiene dos partes complementarias:
+The project has two complementary parts:
 
-- **Parte 1 — App standalone.** Escaneo, deteccion de vulnerabilidades y diagnostico deterministico. No requiere clave de API ni conexion a servicios externos de IA.
-- **Parte 2 — Agente Claude.** Un consultor de seguridad conversacional que orquesta el sistema mediante tool use: lanza escaneos, lee resultados, cruza informacion entre hosts y guia al usuario paso a paso.
-
----
-
-## Caracteristicas
-
-- **Instalacion guiada de un clic** — habilita WSL2 e instala Kali Linux, herramientas, PostgreSQL, backend y sandbox sin comandos manuales.
-- **Escaneo en sandbox aislado** — un servicio en Rust valida cada comando y herramienta antes de ejecutarlo dentro de Kali, con autenticacion por token.
-- **Diagnostico en lenguaje humano** — motor de analisis deterministico que calcula un nivel de riesgo de 0 a 10 y recomendaciones concretas en espanol, sin depender de IA externa.
-- **Correlacion de CVEs** — consulta la base NVD del NIST para cada servicio y version detectados.
-- **Agente de IA opcional** — consultor conversacional basado en la API de Claude con tool use y streaming SSE.
-- **Exportacion de reportes** — PDF, JSON y CSV; comparacion entre escaneos e historial.
-- **Perfiles de escaneo** — `RAPIDO`, `ESTANDAR` y `COMPLETO`.
-- **CI** — GitHub Actions ejecuta los tests de backend, sandbox y frontend en cada push.
+- **Part 1 — Standalone app.** Scanning, vulnerability detection and deterministic diagnosis. No API key and no connection to external AI services required.
+- **Part 2 — Claude agent.** A conversational security consultant that orchestrates the system through tool use: launches scans, reads results, cross-references information between hosts, and guides the user step by step.
 
 ---
 
-## Arquitectura
+## Features
 
-NetSentinel se organiza en cinco capas. Electron es el proceso de escritorio; Angular es la interfaz; Spring Boot coordina la logica; el sandbox en Rust ejecuta las herramientas dentro de Kali en WSL2; PostgreSQL persiste los datos.
+- **Guided one-click installation** — enables WSL2 and installs Kali Linux, the tools, PostgreSQL, the backend and the sandbox with no manual commands.
+- **Scanning in an isolated sandbox** — a Rust service validates every command and tool before running it inside Kali, with token authentication.
+- **Plain-language diagnosis** — a deterministic analysis engine that computes a risk level from 0 to 10 and concrete recommendations, without relying on external AI.
+- **CVE correlation** — queries the NIST NVD database for each detected service and version.
+- **Optional AI agent** — a conversational consultant based on the Claude API with tool use and SSE streaming.
+- **Report export** — PDF, JSON and CSV; comparison between scans and history.
+- **Scan profiles** — `RAPIDO`, `ESTANDAR` and `COMPLETO`.
+- **CI** — GitHub Actions runs the backend, sandbox and frontend tests on every push.
+
+---
+
+## Architecture
+
+NetSentinel is organized into five layers. Electron is the desktop process; Angular is the interface; Spring Boot coordinates the logic; the Rust sandbox runs the tools inside Kali on WSL2; PostgreSQL persists the data.
 
 ```mermaid
 flowchart LR
     UI[Angular 21<br/>renderer] -->|IPC| EL[Electron 42<br/>main process]
     EL -->|HTTP/JSON :8080| API[Spring Boot 3.3.5<br/>Java 21]
-    API --> AN[AnalysisService<br/>riesgo deterministico]
-    API --> SB[Sandbox Rust<br/>Axum :7878]
-    SB -->|comandos validados| KALI[Kali Linux<br/>WSL2]
+    API --> AN[AnalysisService<br/>deterministic risk]
+    API --> SB[Rust Sandbox<br/>Axum :7878]
+    SB -->|validated commands| KALI[Kali Linux<br/>WSL2]
     KALI --> TOOLS[Nmap · Gobuster · Nikto]
     API --> DB[(PostgreSQL 18)]
     API --> NVD[NVD NIST<br/>CVEs]
-    API -. tool use + SSE .-> CLAUDE[Agente Claude]
+    API -. tool use + SSE .-> CLAUDE[Claude agent]
 ```
 
 <details>
-<summary><b>Ver flujo de un escaneo</b></summary>
+<summary><b>View a scan's flow</b></summary>
 
 ```mermaid
 sequenceDiagram
     participant C as Angular
     participant E as Electron
     participant A as Spring Boot
-    participant S as Sandbox Rust
+    participant S as Rust Sandbox
     participant K as Kali WSL2
     participant D as PostgreSQL
-    C->>E: Analizar mi red (IPC)
+    C->>E: Analyze my network (IPC)
     E->>A: POST /api/scan/start
-    A->>A: valida objetivo y perfil
-    A->>S: ejecutar (header X-Sandbox-Auth)
+    A->>A: validates target and profile
+    A->>S: execute (X-Sandbox-Auth header)
     S->>K: nmap -sV -oX - / gobuster / nikto
-    K-->>S: XML y texto
-    S-->>A: resultados crudos
-    A->>A: parseo, correlacion NVD, analisis
-    A->>D: persiste hosts, puertos, CVEs, findings
+    K-->>S: XML and text
+    S-->>A: raw results
+    A->>A: parsing, NVD correlation, analysis
+    A->>D: persists hosts, ports, CVEs, findings
     C->>A: GET /api/scan/{id}/status (polling)
-    A-->>C: COMPLETED + diagnostico
+    A-->>C: COMPLETED + diagnosis
 ```
 </details>
 
-> Detalle completo de capas y decisiones tecnicas en la boveda de documentacion del proyecto.
+> Full detail of the layers and technical decisions in the project documentation vault.
 
 ---
 
 ## Stack
 
-| Capa | Tecnologia |
+| Layer | Technology |
 |---|---|
-| App de escritorio | Electron 42 |
-| Interfaz | Angular 21 + TypeScript |
+| Desktop app | Electron 42 |
+| Interface | Angular 21 + TypeScript |
 | Backend | Spring Boot 3.3.5 + Java 21 |
 | Sandbox | Rust (Axum 0.7 + Tokio) |
-| Linux embebido | WSL2 + Kali Linux |
-| Herramientas | Nmap, Gobuster, Nikto |
-| Base de datos | PostgreSQL 18 (Flyway para migraciones) |
-| Instalador | NSIS + PowerShell (`setup.ps1`) |
-| Agente IA | API de Claude (`claude-sonnet-4-6`, tool use + SSE) |
-| Fuente de CVEs | NVD NIST |
+| Embedded Linux | WSL2 + Kali Linux |
+| Tools | Nmap, Gobuster, Nikto |
+| Database | PostgreSQL 18 (Flyway for migrations) |
+| Installer | NSIS + PowerShell (`setup.ps1`) |
+| AI agent | Claude API (`claude-sonnet-4-6`, tool use + SSE) |
+| CVE source | NVD NIST |
 | CI | GitHub Actions |
 
 ---
 
-## Instalacion
+## Installation
 
-### Requisitos previos
+### Prerequisites
 
-- Windows 10 / 11 con virtualizacion habilitada (para WSL2).
-- Para desarrollo: Java 21 (JDK), Node 20+, Rust (toolchain estable) y PostgreSQL 18.
+- Windows 10 / 11 with virtualization enabled (for WSL2).
+- For development: Java 21 (JDK), Node 20+, Rust (stable toolchain) and PostgreSQL 18.
 
-### Usuario final
+### End user
 
-Descargar e instalar `NetSentinel.Setup.0.1.0.exe` desde el [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0). El instalador resuelve WSL2, Kali y todas las dependencias de forma guiada.
+Download and install `NetSentinel.Setup.0.1.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0). The installer resolves WSL2, Kali and all dependencies in a guided way.
 
 <details>
-<summary><b>Compilacion desde codigo fuente</b></summary>
+<summary><b>Build from source</b></summary>
 
 ```bash
 git clone https://github.com/FaridDevU/NetSentinel.git
@@ -173,16 +173,16 @@ npm install
 npm run electron:build
 ```
 
-El instalador generado queda en `frontend/dist-installer/`.
+The generated installer ends up in `frontend/dist-installer/`.
 </details>
 
 ---
 
-## Uso
+## Usage
 
-Desde la aplicacion: abrir, pulsar **Analizar mi red**, esperar a que el escaneo pase a `COMPLETED` y revisar el dashboard, los hallazgos por severidad y las recomendaciones. Los resultados se pueden exportar a PDF, JSON o CSV, comparar contra escaneos previos y consultar en el historial.
+From the app: open it, press **Analyze my network**, wait for the scan to reach `COMPLETED`, and review the dashboard, the findings by severity, and the recommendations. Results can be exported to PDF, JSON or CSV, compared against previous scans, and consulted in the history.
 
-Contra la API local, un ciclo completo de escaneo:
+Against the local API, a full scan cycle:
 
 ```bash
 curl -X POST http://localhost:8080/api/scan/start \
@@ -198,28 +198,28 @@ curl http://localhost:8080/api/scan/{id}/results
 
 ## API
 
-API REST local servida por el backend en `http://localhost:8080`. Endpoints principales:
+Local REST API served by the backend at `http://localhost:8080`. Main endpoints:
 
-| Metodo | Ruta | Descripcion |
+| Method | Path | Description |
 |---|---|---|
-| GET | /api/health | Estado del backend, base de datos y sandbox |
-| POST | /api/scan/start | Inicia un escaneo (objetivo + perfil) |
-| GET | /api/scan/{id}/status | Estado de un escaneo |
-| GET | /api/scan/{id}/results | Resultados completos |
-| POST | /api/scan/{id}/cancel | Cancela un escaneo en curso |
-| DELETE | /api/scan/{id} | Elimina un escaneo |
-| GET | /api/scan/{id}/logs | Logs del escaneo |
-| GET | /api/scan/{id}/export/pdf | Exporta el reporte en PDF |
-| GET | /api/scan/{id}/export/json | Exporta el reporte en JSON |
-| GET | /api/scan/{id}/export/csv | Exporta el reporte en CSV |
-| GET | /api/scan/compare | Compara dos escaneos |
-| GET | /api/history | Historial paginado de escaneos |
-| GET | /api/network/local | Redes locales detectadas |
-| GET | /api/dashboard | Resumen para el dashboard |
-| GET | /api/assets | Inventario de activos detectados |
-| GET | /api/scan/{scanId}/findings/statuses | Estado de los hallazgos |
-| PUT | /api/scan/{scanId}/findings/status | Actualiza el estado de un hallazgo |
-| POST | /api/agent/chat | Chat con el agente Claude (SSE) |
+| GET | /api/health | Status of the backend, database and sandbox |
+| POST | /api/scan/start | Starts a scan (target + profile) |
+| GET | /api/scan/{id}/status | Status of a scan |
+| GET | /api/scan/{id}/results | Full results |
+| POST | /api/scan/{id}/cancel | Cancels a scan in progress |
+| DELETE | /api/scan/{id} | Deletes a scan |
+| GET | /api/scan/{id}/logs | Scan logs |
+| GET | /api/scan/{id}/export/pdf | Exports the report as PDF |
+| GET | /api/scan/{id}/export/json | Exports the report as JSON |
+| GET | /api/scan/{id}/export/csv | Exports the report as CSV |
+| GET | /api/scan/compare | Compares two scans |
+| GET | /api/history | Paginated scan history |
+| GET | /api/network/local | Detected local networks |
+| GET | /api/dashboard | Dashboard summary |
+| GET | /api/assets | Inventory of detected assets |
+| GET | /api/scan/{scanId}/findings/statuses | Status of the findings |
+| PUT | /api/scan/{scanId}/findings/status | Updates the status of a finding |
+| POST | /api/agent/chat | Chat with the Claude agent (SSE) |
 
 ---
 
@@ -231,11 +231,11 @@ cd sandbox && cargo test
 cd frontend && npm test -- --no-watch
 ```
 
-Cobertura actual: backend con tests unitarios y de integracion (`ScanServiceIntegrationTest` con Testcontainers), sandbox con tests de validacion de comandos y objetivos, y suite de frontend. La CI los ejecuta en cada push.
+Current coverage: backend with unit and integration tests (`ScanServiceIntegrationTest` with Testcontainers), sandbox with command and target validation tests, and a frontend suite. CI runs them on every push.
 
 ---
 
-## Estructura del proyecto
+## Project structure
 
 
 <img width="2712" height="3468" alt="diagram" src="https://github.com/user-attachments/assets/ef1eea99-823e-4d12-9fe1-540a3fae57dc" />
@@ -245,29 +245,29 @@ Cobertura actual: backend con tests unitarios y de integracion (`ScanServiceInte
 
 ## Roadmap
 
-- [x] Escaneo, parseo y analisis deterministico
-- [x] Sandbox en Rust con validacion y token de autenticacion
-- [x] Correlacion de CVEs con NVD
-- [x] Instalador guiado (NSIS + setup.ps1)
-- [x] Agente Claude con tool use y SSE
-- [x] Exportacion PDF / JSON / CSV e historial
-- [ ] Validacion del instalador en maquina/VM limpia y promocion del release a estable
-- [ ] Mapa de topologia de red (Cytoscape.js)
-- [ ] Endurecimiento del sandbox a nivel SO (Landlock / Job Objects)
-- [ ] Cola de jobs con Redis
+- [x] Scanning, parsing and deterministic analysis
+- [x] Rust sandbox with validation and an authentication token
+- [x] CVE correlation with NVD
+- [x] Guided installer (NSIS + setup.ps1)
+- [x] Claude agent with tool use and SSE
+- [x] PDF / JSON / CSV export and history
+- [ ] Installer validation on a clean machine/VM and promotion of the release to stable
+- [ ] Network topology map (Cytoscape.js)
+- [ ] Sandbox hardening at the OS level (Landlock / Job Objects)
+- [ ] Job queue with Redis
 
-Ver los [issues abiertos](../../issues) para el detalle.
+See the [open issues](../../issues) for the details.
 
 ---
 
-## Licencia
+## License
 
-Distribuido bajo licencia MIT. Ver [`LICENSE`](LICENSE).
+Distributed under the MIT license. See [`LICENSE`](LICENSE).
 
 [![License](https://img.shields.io/github/license/FaridDevU/NetSentinel?style=flat-square)](LICENSE)
 
 <div align="center">
-<sub>Repositorio: <a href="https://github.com/FaridDevU/NetSentinel">github.com/FaridDevU/NetSentinel</a></sub>
+<sub>Repository: <a href="https://github.com/FaridDevU/NetSentinel">github.com/FaridDevU/NetSentinel</a></sub>
 
-<a href="#netsentinel">Volver arriba</a>
+<a href="#netsentinel">Back to top</a>
 </div>
