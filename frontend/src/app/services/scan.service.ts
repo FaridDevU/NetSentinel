@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { LangService } from './lang.service';
 import { Observable, from } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
@@ -20,10 +21,14 @@ import {
 export class ScanService {
   private readonly base = 'http://localhost:8080/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private lang: LangService) {}
 
   startScan(target: string, parameters: string[]): Observable<StartScanResponse> {
-    return this.http.post<StartScanResponse>(`${this.base}/scan/start`, { target, parameters });
+    return this.http.post<StartScanResponse>(`${this.base}/scan/start`, {
+      target,
+      parameters,
+      language: this.lang.lang(),
+    });
   }
 
   getStatus(id: string): Observable<ScanStatusResponse> {

@@ -536,7 +536,7 @@ export class LangService {
   private static readonly KEY = 'ns_lang';
 
   lang = signal<'es' | 'en'>(
-    (localStorage.getItem(LangService.KEY) as 'es' | 'en') ?? 'es'
+    (localStorage.getItem(LangService.KEY) as 'es' | 'en') ?? 'en'
   );
 
   toggle(): void {
