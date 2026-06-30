@@ -24,7 +24,7 @@ There are no commands for the end user. The full flow is:
 
 1. Download `NetSentinel.Setup.0.1.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0).
 2. Install with a double click and open the app.
-3. Press **Complete installation** and approve the UAC prompt. The installer enables WSL2 and installs Kali Linux, the tools, the database, the backend and the sandbox in a guided way.
+3. Press **Complete installation**. Everything ships inside the installer — a bundled Java runtime, the local database (SQLite), the scan engine and the native tools — so there is nothing else to set up.
 4. Press **Analyze my network** and read the diagnosis.
 
 The backend exposes a local REST API at `http://localhost:8080`. A scan is started like this:
@@ -58,7 +58,7 @@ curl -X POST http://localhost:8080/api/scan/start \
 
 ## Why this project
 
-Most network security tools (Nmap, Nikto, Gobuster, Metasploit) are powerful but require technical knowledge: interpreting ports, services, versions and CVEs. NetSentinel closes that gap. It packages a complete Kali Linux environment inside a Windows desktop app, runs the tools in a controlled sandbox, and translates the results into an actionable, plain-language diagnosis. The goal is for anyone to be able to audit their own network with a single button, without opening a terminal or installing dependencies by hand.
+Most network security tools (Nmap, Nikto, Gobuster, Metasploit) are powerful but require technical knowledge: interpreting ports, services, versions and CVEs. NetSentinel closes that gap. It bundles the security tools and a Rust sandbox natively inside a self-contained Windows desktop app, runs the tools in a controlled sandbox, and translates the results into an actionable, plain-language diagnosis. The goal is for anyone to audit their own network with a single button — no terminal, no admin rights, and no dependencies to install by hand.
 
 The project has two complementary parts:
 
@@ -69,8 +69,8 @@ The project has two complementary parts:
 
 ## Features
 
-- **Guided one-click installation** — enables WSL2 and installs Kali Linux, the tools, PostgreSQL, the backend and the sandbox with no manual commands.
-- **Scanning in an isolated sandbox** — a Rust service validates every command and tool before running it inside Kali, with token authentication.
+- **Self-contained one-click install** — bundles a trimmed Java runtime, SQLite, the backend, the Rust sandbox and the native tools; no WSL, no admin and no virtualization required.
+- **Scanning in an isolated sandbox** — a native Rust service validates every command and tool before running it, with token authentication.
 - **Plain-language diagnosis** — a deterministic analysis engine that computes a risk level from 0 to 10 and concrete recommendations, without relying on external AI.
 - **CVE correlation** — queries the NIST NVD database for each detected service and version.
 - **Optional AI agent** — a conversational consultant based on the Claude API with tool use and SSE streaming.
@@ -82,17 +82,16 @@ The project has two complementary parts:
 
 ## Architecture
 
-NetSentinel is organized into five layers. Electron is the desktop process; Angular is the interface; Spring Boot coordinates the logic; the Rust sandbox runs the tools inside Kali on WSL2; PostgreSQL persists the data.
+NetSentinel is organized into native layers. Electron is the desktop process; Angular is the interface; Spring Boot (on a bundled JRE) coordinates the logic; the Rust sandbox runs the native Windows tools; SQLite persists the data locally.
 
 ```mermaid
 flowchart LR
     UI[Angular 21<br/>renderer] -->|IPC| EL[Electron 42<br/>main process]
-    EL -->|HTTP/JSON :8080| API[Spring Boot 3.3.5<br/>Java 21]
+    EL -->|HTTP/JSON :8080| API[Spring Boot 3.3.5<br/>bundled JRE 21]
     API --> AN[AnalysisService<br/>deterministic risk]
     API --> SB[Rust Sandbox<br/>Axum :7878]
-    SB -->|validated commands| KALI[Kali Linux<br/>WSL2]
-    KALI --> TOOLS[Nmap · Gobuster · Nikto]
-    API --> DB[(PostgreSQL 18)]
+    SB -->|validated commands| TOOLS[Nmap · Gobuster<br/>native Windows .exe]
+    API --> DB[(SQLite<br/>embedded)]
     API --> NVD[NVD NIST<br/>CVEs]
     API -. tool use + SSE .-> CLAUDE[Claude agent]
 ```
@@ -106,14 +105,14 @@ sequenceDiagram
     participant E as Electron
     participant A as Spring Boot
     participant S as Rust Sandbox
-    participant K as Kali WSL2
-    participant D as PostgreSQL
+    participant T as Native tools
+    participant D as SQLite
     C->>E: Analyze my network (IPC)
     E->>A: POST /api/scan/start
     A->>A: validates target and profile
     A->>S: execute (X-Sandbox-Auth header)
-    S->>K: nmap -sV -oX - / gobuster / nikto
-    K-->>S: XML and text
+    S->>T: nmap -sT -sV -oX - / gobuster
+    T-->>S: XML and text
     S-->>A: raw results
     A->>A: parsing, NVD correlation, analysis
     A->>D: persists hosts, ports, CVEs, findings
@@ -134,9 +133,9 @@ sequenceDiagram
 | Interface | Angular 21 + TypeScript |
 | Backend | Spring Boot 3.3.5 + Java 21 |
 | Sandbox | Rust (Axum 0.7 + Tokio) |
-| Embedded Linux | WSL2 + Kali Linux |
-| Tools | Nmap, Gobuster, Nikto |
-| Database | PostgreSQL 18 (Flyway for migrations) |
+| Tools | Nmap, Gobuster (Nikto optional) |
+| Database | SQLite (embedded, Hibernate schema) |
+| Runtime | Bundled JRE via jlink — no system Java |
 | Installer | NSIS + PowerShell (`setup.ps1`) |
 | AI agent | Claude API (`claude-sonnet-4-6`, tool use + SSE) |
 | CVE source | NVD NIST |
@@ -148,12 +147,12 @@ sequenceDiagram
 
 ### Prerequisites
 
-- Windows 10 / 11 with virtualization enabled (for WSL2).
-- For development: Java 21 (JDK), Node 20+, Rust (stable toolchain) and PostgreSQL 18.
+- Windows 10 / 11 (no WSL, no virtualization and no admin required).
+- For development: Java 21 (JDK), Node 20+ and Rust (stable toolchain).
 
 ### End user
 
-Download and install `NetSentinel.Setup.0.1.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0). The installer resolves WSL2, Kali and all dependencies in a guided way.
+Download and install `NetSentinel.Setup.0.1.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0). The installer is self-contained; there are no external dependencies to set up.
 
 <details>
 <summary><b>Build from source</b></summary>
@@ -253,7 +252,7 @@ Current coverage: backend with unit and integration tests (`ScanServiceIntegrati
 - [x] PDF / JSON / CSV export and history
 - [ ] Installer validation on a clean machine/VM and promotion of the release to stable
 - [ ] Network topology map (Cytoscape.js)
-- [ ] Sandbox hardening at the OS level (Landlock / Job Objects)
+- [ ] Sandbox hardening at the OS level (Windows Job Objects / AppContainer)
 - [ ] Job queue with Redis
 
 See the [open issues](../../issues) for the details.
