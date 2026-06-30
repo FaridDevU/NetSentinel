@@ -3,29 +3,29 @@ const path = require('path');
 const fs = require('fs');
 
 const frontendDir = path.resolve(__dirname, '..');
-const installerDir = path.join(frontendDir, 'installer');
-const outputBinary = path.join(installerDir, 'netsentinel-sandbox');
+const sandboxDir = path.resolve(frontendDir, '..', 'sandbox');
+const builtBinary = path.join(sandboxDir, 'target', 'release', 'sandbox.exe');
+const buildDir = path.join(frontendDir, 'build');
+const toolsDir = path.join(buildDir, 'tools');
+const outputBinary = path.join(buildDir, 'sandbox.exe');
 
-console.log('Compiling Rust sandbox for Kali WSL2...');
+console.log('Compiling Rust sandbox for Windows...');
 
 try {
-  if (fs.existsSync(outputBinary)) {
-    fs.rmSync(outputBinary);
-  }
-  const winPath = frontendDir.replace(/\\/g, '/');
-  const wslFrontend = execSync(`wsl wslpath -u "${winPath}"`, { encoding: 'utf8' }).trim();
-  const wslSandbox = `${wslFrontend}/../sandbox`;
-  const wslOutput = `${wslFrontend}/installer/netsentinel-sandbox`;
+  execSync('cargo build --release', { cwd: sandboxDir, stdio: 'inherit' });
 
-  execSync(
-    `wsl -d kali-linux -- bash -c "cd '${wslSandbox}' && cargo build --release 2>&1 && cp target/release/sandbox '${wslOutput}'"`,
-    { stdio: 'inherit' }
-  );
-  console.log('Sandbox compiled and placed at installer/netsentinel-sandbox');
+  if (!fs.existsSync(builtBinary)) {
+    throw new Error(`Expected ${builtBinary} after cargo build`);
+  }
+
+  fs.mkdirSync(toolsDir, { recursive: true });
+  fs.copyFileSync(builtBinary, outputBinary);
+
+  console.log('Sandbox compiled and placed at build/sandbox.exe');
 } catch (e) {
   console.error('ERROR: Could not compile sandbox binary.');
-  console.error('Make sure cargo is installed in Kali WSL2: sudo apt-get install -y cargo');
+  console.error('Make sure the Rust toolchain (cargo) is installed and on PATH.');
   console.error('Or compile manually: cd sandbox && cargo build --release');
-  console.error('Then copy: sandbox/target/release/sandbox -> frontend/installer/netsentinel-sandbox');
+  console.error('Then copy: sandbox/target/release/sandbox.exe -> frontend/build/sandbox.exe');
   process.exit(1);
 }

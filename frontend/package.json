@@ -12,7 +12,8 @@
     "electron:tsc": "tsc -p tsconfig.electron.json",
     "electron:dev": "npm run electron:tsc && cross-env NODE_ENV=development concurrently \"ng serve\" \"wait-on http://localhost:4200 && electron .\"",
     "electron:build": "npm run electron:tsc && cross-env NODE_ENV=production ng build --base-href ./ && electron-builder",
-    "electron:dist": "cd ../backend && mvn package -q -DskipTests && cd ../frontend && node scripts/build-sandbox.js && npm run electron:build"
+    "build:jre": "node -e \"require('fs').rmSync('build/jre',{recursive:true,force:true})\" && jlink --add-modules java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.security.sasl,java.sql,java.transaction.xa,java.xml,jdk.crypto.cryptoki,jdk.crypto.ec,jdk.unsupported,jdk.zipfs --strip-debug --no-header-files --no-man-pages --compress=zip-6 --output build/jre",
+    "electron:dist": "cd ../backend && mvn package -q -DskipTests && cd ../frontend && node scripts/build-sandbox.js && npm run build:jre && npm run electron:build"
   },
   "private": true,
   "packageManager": "npm@11.9.0",
@@ -31,8 +32,20 @@
         "to": "backend.jar"
       },
       {
-        "from": "installer/",
-        "to": "installer/"
+        "from": "build/jre",
+        "to": "jre"
+      },
+      {
+        "from": "build/sandbox.exe",
+        "to": "sandbox.exe"
+      },
+      {
+        "from": "build/tools",
+        "to": "tools"
+      },
+      {
+        "from": "installer/setup.ps1",
+        "to": "installer/setup.ps1"
       },
       {
         "from": "public/icon.ico",

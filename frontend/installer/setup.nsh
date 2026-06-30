@@ -6,6 +6,5 @@
 !macroend
 
 !macro customUninstall
-  ExecWait 'powershell.exe -Command "Get-Process -Name java -ErrorAction SilentlyContinue | Stop-Process -Force"'
-  ExecWait 'wsl -d kali-linux -- bash -c "pkill -f netsentinel-sandbox 2>/dev/null || true"'
+  ExecWait 'powershell.exe -NoProfile -Command "Get-Process -Name sandbox -ErrorAction SilentlyContinue | Stop-Process -Force"'
 !macroend

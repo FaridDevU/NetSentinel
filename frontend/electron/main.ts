@@ -1,12 +1,17 @@
 import { app, BrowserWindow, nativeImage, Menu, ipcMain } from 'electron';
-import { join } from 'path';
+import { join, delimiter } from 'path';
 import { spawn, ChildProcess } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
-import { networkInterfaces } from 'os';
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
+import { networkInterfaces, homedir } from 'os';
 import { randomUUID } from 'crypto';
 
 let mainWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
+let sandboxProcess: ChildProcess | null = null;
+
+const CONFIG_DIR = join(homedir(), '.netsentinel');
+const CONFIG_FILE = join(CONFIG_DIR, 'config.env');
+const HEALTH_URL = 'http://127.0.0.1:8080/api/health';
 
 interface DepResult {
   id: string;
@@ -22,43 +27,70 @@ interface LocalNetwork {
   subnet: string;
 }
 
-function spawnOk(cmd: string, args: string[], timeoutMs: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const proc = spawn(cmd, args, { stdio: 'ignore' });
-    const t = setTimeout(() => { proc.kill(); resolve(false); }, timeoutMs);
-    proc.on('error', () => { clearTimeout(t); resolve(false); });
-    proc.on('close', (code) => { clearTimeout(t); resolve(code === 0); });
-  });
+function backendJarPath(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'backend.jar')
+    : join(__dirname, '..', '..', 'backend', 'target', 'backend-0.1.0.jar');
 }
 
-function spawnCapture(cmd: string, args: string[], timeoutMs: number): Promise<Buffer> {
-  return new Promise((resolve) => {
-    const chunks: Buffer[] = [];
-    const proc = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'ignore'] });
-    const t = setTimeout(() => { proc.kill(); resolve(Buffer.alloc(0)); }, timeoutMs);
-    proc.stdout!.on('data', (d: Buffer) => chunks.push(d));
-    proc.on('error', () => { clearTimeout(t); resolve(Buffer.alloc(0)); });
-    proc.on('close', () => { clearTimeout(t); resolve(Buffer.concat(chunks)); });
-  });
+function javaPath(): string {
+  return app.isPackaged ? join(process.resourcesPath, 'jre', 'bin', 'java.exe') : 'java';
 }
 
-async function runQuickCheck(): Promise<{ wsl: boolean; kali: boolean }> {
-  const wsl = await spawnOk('wsl', ['--status'], 4000);
-  if (!wsl) return { wsl: false, kali: false };
-  const buf = await spawnCapture('wsl', ['--list', '--quiet'], 4000);
-  const kali = buf.toString('utf16le').toLowerCase().includes('kali');
-  if (!kali) return { wsl, kali: false };
-  const ready = await spawnOk('wsl', [
-    '-d', 'kali-linux', '--', 'bash', '-c', 'test -f "$HOME/.netsentinel/start.sh"'
-  ], 5000);
-  return { wsl, kali: ready };
+function sandboxPath(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'sandbox.exe')
+    : join(__dirname, '..', '..', 'sandbox', 'target', 'release', 'sandbox.exe');
+}
+
+function toolsPath(): string {
+  return app.isPackaged ? join(process.resourcesPath, 'tools') : join(__dirname, '..', '..', 'tools');
+}
+
+function readConfig(): Record<string, string> {
+  const config: Record<string, string> = {};
+  try {
+    const raw = readFileSync(CONFIG_FILE, 'utf8');
+    for (const line of raw.split(/\r?\n/)) {
+      const match = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
+      if (match) config[match[1]] = match[2];
+    }
+  } catch {
+    return config;
+  }
+  return config;
+}
+
+function writeConfig(config: Record<string, string>): void {
+  mkdirSync(CONFIG_DIR, { recursive: true });
+  const body = Object.entries(config).map(([k, v]) => `${k}=${v}`).join('\n');
+  writeFileSync(CONFIG_FILE, body ? `${body}\n` : '');
+}
+
+function setConfigValue(key: string, value: string): void {
+  const config = readConfig();
+  config[key] = value;
+  writeConfig(config);
+}
+
+function ensureConfig(): void {
+  const config = readConfig();
+  if (!config.SANDBOX_AUTH_TOKEN) {
+    config.SANDBOX_AUTH_TOKEN = randomUUID().replace(/-/g, '');
+    writeConfig(config);
+  }
+}
+
+function nativeResourcesReady(): boolean {
+  if (!app.isPackaged) return true;
+  return existsSync(backendJarPath()) && existsSync(javaPath()) && existsSync(sandboxPath());
 }
 
 async function backendHealthOk(timeoutMs = 3000): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch('http://localhost:8080/api/health', { signal: controller.signal });
+    const response = await fetch(HEALTH_URL, { signal: controller.signal });
     return response.ok;
   } catch {
     return false;
@@ -76,33 +108,24 @@ async function waitForBackend(timeoutMs = 30000): Promise<boolean> {
   return false;
 }
 
+async function runQuickCheck(): Promise<{ wsl: boolean; kali: boolean }> {
+  const ready = nativeResourcesReady();
+  return { wsl: ready, kali: ready };
+}
+
 async function runDepsCheck(): Promise<DepResult[]> {
   const results: DepResult[] = [];
 
-  const wslOk = await spawnOk('wsl', ['--status'], 5000);
-  results.push({ id: 'wsl', label: 'Funciones locales de Windows', ok: wslOk, detail: wslOk ? 'Listo' : 'Pendiente', technicalDetail: 'wsl --status' });
-  if (!wslOk) return results;
+  const jar = backendJarPath();
+  const jarOk = existsSync(jar);
+  results.push({ id: 'backend', label: 'Application service', ok: jarOk, detail: jarOk ? 'Ready' : 'Pending', technicalDetail: jar });
 
-  const kaliBuf = await spawnCapture('wsl', ['--list', '--quiet'], 5000);
-  const kaliOk = kaliBuf.toString('utf16le').toLowerCase().includes('kali');
-  results.push({ id: 'kali', label: 'Motor local de analisis', ok: kaliOk, detail: kaliOk ? 'Listo' : 'Pendiente', technicalDetail: 'wsl --list --quiet' });
-  if (!kaliOk) return results;
-
-  const jarOk = await spawnOk('wsl', ['-d', 'kali-linux', '--', 'bash', '-c', 'test -f $HOME/.netsentinel/backend.jar'], 10000);
-  results.push({ id: 'backend', label: 'Servicio interno', ok: jarOk, detail: jarOk ? 'Listo' : 'Pendiente', technicalDetail: '~/.netsentinel/backend.jar' });
-
-  const sandboxOk = await spawnOk('wsl', ['-d', 'kali-linux', '--', 'bash', '-c', 'test -x $HOME/.netsentinel/sandbox'], 10000);
-  results.push({ id: 'sandbox', label: 'Motor seguro de escaneo', ok: sandboxOk, detail: sandboxOk ? 'Listo' : 'Pendiente', technicalDetail: '~/.netsentinel/sandbox' });
-
-  const pgBuf = await spawnCapture('wsl', [
-    '-d', 'kali-linux', '--', 'bash', '-c',
-    'sudo service postgresql start 2>/dev/null; pg_isready -h 127.0.0.1 -U netsentinel -d netsentinel 2>&1'
-  ], 20000);
-  const pgOk = pgBuf.toString('utf8').includes('accepting connections');
-  results.push({ id: 'postgresql', label: 'Almacenamiento local', ok: pgOk, detail: pgOk ? 'Listo' : 'Pendiente', technicalDetail: pgBuf.toString('utf8').trim() || 'pg_isready' });
+  const sandbox = sandboxPath();
+  const sandboxOk = existsSync(sandbox);
+  results.push({ id: 'sandbox', label: 'Secure scan engine', ok: sandboxOk, detail: sandboxOk ? 'Ready' : 'Pending', technicalDetail: sandbox });
 
   const apiOk = await backendHealthOk();
-  results.push({ id: 'api', label: 'Aplicacion local', ok: apiOk, detail: apiOk ? 'Listo' : 'Pendiente', technicalDetail: 'GET http://localhost:8080/api/health' });
+  results.push({ id: 'api', label: 'Local application', ok: apiOk, detail: apiOk ? 'Ready' : 'Pending', technicalDetail: `GET ${HEALTH_URL}` });
 
   return results;
 }
@@ -200,46 +223,46 @@ function setupIpcHandlers(): void {
   ipcMain.handle('config:saveNvdKey', (_evt, rawKey: string) => {
     const key = String(rawKey).replace(/[^a-zA-Z0-9\-]/g, '');
     if (!key) return;
-    return new Promise<void>((resolve) => {
-      const proc = spawn('wsl', [
-        '-d', 'kali-linux', '--', 'bash', '-c',
-        `mkdir -p ~/.netsentinel && touch ~/.netsentinel/config.env && sed -i '/^NVD_API_KEY=/d' ~/.netsentinel/config.env && printf 'NVD_API_KEY=%s\\n' '${key}' >> ~/.netsentinel/config.env`
-      ], { stdio: 'ignore' });
-      proc.on('close', () => resolve());
-      proc.on('error', () => resolve());
-    });
+    setConfigValue('NVD_API_KEY', key);
   });
 }
 
-function ensureConfig(): Promise<void> {
-  const token = randomUUID().replace(/-/g, '');
-  const script = [
-    'mkdir -p ~/.netsentinel',
-    'touch ~/.netsentinel/config.env',
-    `grep -q '^SANDBOX_AUTH_TOKEN=' ~/.netsentinel/config.env || printf 'SANDBOX_AUTH_TOKEN=%s\\n' '${token}' >> ~/.netsentinel/config.env`,
-    `grep -q '^SERVER_ADDRESS=' ~/.netsentinel/config.env || printf 'SERVER_ADDRESS=0.0.0.0\\n' >> ~/.netsentinel/config.env`,
-  ].join('; ');
-  return new Promise<void>((resolve) => {
-    const proc = spawn('wsl', ['-d', 'kali-linux', '--', 'bash', '-c', script], { stdio: 'ignore' });
-    proc.on('close', () => resolve());
-    proc.on('error', () => resolve());
+function startSandbox(token: string): void {
+  const bin = sandboxPath();
+  if (!existsSync(bin)) return;
+  if (sandboxProcess && sandboxProcess.exitCode === null) return;
+
+  const tools = toolsPath();
+  const pathValue = existsSync(tools)
+    ? `${tools}${delimiter}${process.env.PATH ?? ''}`
+    : (process.env.PATH ?? '');
+
+  sandboxProcess = spawn(bin, [], {
+    stdio: 'ignore',
+    detached: false,
+    env: { ...process.env, SANDBOX_AUTH_TOKEN: token, PATH: pathValue },
   });
+
+  sandboxProcess.on('error', () => {});
 }
 
 function startBackend(): void {
-  if (!app.isPackaged) return;
-  if (backendProcess && backendProcess.exitCode === null) return;
+  const jar = backendJarPath();
+  if (!existsSync(jar)) return;
 
-  backendProcess = spawn('wsl', [
-    '-d', 'kali-linux',
-    '--',
-    'bash', '-c', 'bash "$HOME/.netsentinel/start.sh"'
-  ], {
-    stdio: 'ignore',
-    detached: false,
-  });
+  const config = readConfig();
+  const token = config.SANDBOX_AUTH_TOKEN ?? '';
 
-  backendProcess.on('error', () => {});
+  if (!backendProcess || backendProcess.exitCode !== null) {
+    backendProcess = spawn(javaPath(), ['-jar', jar], {
+      stdio: 'ignore',
+      detached: false,
+      env: { ...process.env, ...config },
+    });
+    backendProcess.on('error', () => {});
+  }
+
+  startSandbox(token);
 }
 
 function resolveIcon(): Electron.NativeImage {
@@ -326,7 +349,7 @@ setupIpcHandlers();
 
 app.whenReady().then(async () => {
   app.setAppUserModelId('com.netsentinel.app');
-  await ensureConfig();
+  ensureConfig();
   startBackend();
   await createWindow();
 
@@ -339,6 +362,10 @@ app.on('window-all-closed', () => {
   if (backendProcess) {
     backendProcess.kill();
     backendProcess = null;
+  }
+  if (sandboxProcess) {
+    sandboxProcess.kill();
+    sandboxProcess = null;
   }
   if (process.platform !== 'darwin') app.quit();
 });
