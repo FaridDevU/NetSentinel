@@ -8,26 +8,30 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
 class ScanServiceIntegrationTest {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    private static final Path DB_FILE;
+
+    static {
+        try {
+            DB_FILE = Files.createTempFile("netsentinel-it-", ".db");
+        } catch (IOException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     @DynamicPropertySource
     static void datasourceProps(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + DB_FILE.toString().replace('\\', '/'));
     }
 
     @Autowired
@@ -40,7 +44,7 @@ class ScanServiceIntegrationTest {
     private NvdService nvdService;
 
     @Test
-    void flywayCreaEsquemaYElCrudDeEscaneosFunciona() {
+    void schemaIsCreatedAndScanCrudWorks() {
         ScanJob job = scanService.createScan("192.168.1.0/24", List.of("-sV", "-T4"));
         assertThat(job.getId()).isNotNull();
 
