@@ -227,7 +227,7 @@ public class AgentService {
                             ? objectMapper.convertValue(input.get("parameters"), new TypeReference<>() {})
                             : List.of("-sV", "-T4");
                     if (!ScanProfile.isAllowed(params)) {
-                        params = ScanProfile.ESTANDAR.parameters();
+                        params = ScanProfile.STANDARD.parameters();
                     }
                     var job = scanService.createScan(target, params);
                     scanService.executeScan(job.getId());

@@ -94,7 +94,7 @@ export interface LocalNetworkInterface {
   subnet: string;
 }
 
-export type ScanProfile = 'RAPIDO' | 'ESTANDAR' | 'COMPLETO';
+export type ScanProfile = 'QUICK' | 'STANDARD' | 'FULL';
 
 export interface ScanStatusResponse {
   id: string;

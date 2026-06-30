@@ -10,19 +10,19 @@ class ScanProfileTest {
 
     @Test
     void rapidoTraeTopPorts100() {
-        assertThat(ScanProfile.RAPIDO.parameters())
+        assertThat(ScanProfile.QUICK.parameters())
                 .containsExactly("-sV", "-T4", "--top-ports", "100");
     }
 
     @Test
     void estandarTraeFlagsBasicos() {
-        assertThat(ScanProfile.ESTANDAR.parameters())
+        assertThat(ScanProfile.STANDARD.parameters())
                 .containsExactly("-sV", "-T4");
     }
 
     @Test
     void completoTraeTodosLosPuertos() {
-        assertThat(ScanProfile.COMPLETO.parameters())
+        assertThat(ScanProfile.FULL.parameters())
                 .containsExactly("-sV", "-T4", "-p-");
     }
 
@@ -48,6 +48,6 @@ class ScanProfileTest {
     @Test
     void fromParametersDevuelveEnumCorrecto() {
         assertThat(ScanProfile.fromParameters(List.of("-sV", "-T4", "-p-")))
-                .contains(ScanProfile.COMPLETO);
+                .contains(ScanProfile.FULL);
     }
 }

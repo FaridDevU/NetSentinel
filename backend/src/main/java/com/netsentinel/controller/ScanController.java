@@ -85,10 +85,10 @@ public class ScanController {
 
         List<String> parameters = request.parameters() != null
                 ? request.parameters()
-                : ScanProfile.ESTANDAR.parameters();
+                : ScanProfile.STANDARD.parameters();
         if (!ScanProfile.isAllowed(parameters)) {
             throw new ApiException(ErrorCode.INVALID_SCAN_PROFILE,
-                    "Invalid scan profile. Accepted: RAPIDO, ESTANDAR, COMPLETO");
+                    "Invalid scan profile. Accepted: QUICK, STANDARD, FULL");
         }
 
         ScanJob job = scanService.createScan(target, parameters, request.language());

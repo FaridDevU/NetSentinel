@@ -32,7 +32,7 @@ The backend exposes a local REST API at `http://localhost:8080`. A scan is start
 ```bash
 curl -X POST http://localhost:8080/api/scan/start \
   -H "Content-Type: application/json" \
-  -d '{"target": "192.168.1.0/24", "parameters": ["ESTANDAR"]}'
+  -d '{"target": "192.168.1.0/24", "parameters": ["STANDARD"]}'
 ```
 
 ```json
@@ -75,7 +75,7 @@ The project has two complementary parts:
 - **CVE correlation** — queries the NIST NVD database for each detected service and version.
 - **Optional AI agent** — a conversational consultant based on the Claude API with tool use and SSE streaming.
 - **Report export** — PDF, JSON and CSV; comparison between scans and history.
-- **Scan profiles** — `RAPIDO`, `ESTANDAR` and `COMPLETO`.
+- **Scan profiles** — `QUICK`, `STANDARD` and `FULL`.
 - **CI** — GitHub Actions runs the backend, sandbox and frontend tests on every push.
 
 ---
@@ -187,7 +187,7 @@ Against the local API, a full scan cycle:
 ```bash
 curl -X POST http://localhost:8080/api/scan/start \
   -H "Content-Type: application/json" \
-  -d '{"target": "127.0.0.1", "parameters": ["RAPIDO"]}'
+  -d '{"target": "127.0.0.1", "parameters": ["QUICK"]}'
 
 curl http://localhost:8080/api/scan/{id}/status
 

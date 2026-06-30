@@ -35,13 +35,13 @@ export class ScanPage implements OnInit, OnDestroy {
   errorMessage = signal<string | null>(null);
   scanLogs = signal<string[]>([]);
   showTerminal = signal(false);
-  scanProfile = signal<ScanProfile>('ESTANDAR');
+  scanProfile = signal<ScanProfile>('STANDARD');
 
   private static readonly TARGET_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9.\-:/\[\]]{0,99}$/;
   private static readonly PROFILE_PARAMS: Record<ScanProfile, string[]> = {
-    RAPIDO:   ['-sV', '-T4', '--top-ports', '100'],
-    ESTANDAR: ['-sV', '-T4'],
-    COMPLETO: ['-sV', '-T4', '-p-'],
+    QUICK:    ['-sV', '-T4', '--top-ports', '100'],
+    STANDARD: ['-sV', '-T4'],
+    FULL:     ['-sV', '-T4', '-p-'],
   };
 
   get targetError(): string | null {

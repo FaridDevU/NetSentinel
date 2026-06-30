@@ -6,9 +6,9 @@ import java.util.Optional;
 
 public enum ScanProfile {
 
-    RAPIDO(List.of("-sV", "-T4", "--top-ports", "100")),
-    ESTANDAR(List.of("-sV", "-T4")),
-    COMPLETO(List.of("-sV", "-T4", "-p-"));
+    QUICK(List.of("-sV", "-T4", "--top-ports", "100")),
+    STANDARD(List.of("-sV", "-T4")),
+    FULL(List.of("-sV", "-T4", "-p-"));
 
     private final List<String> parameters;
 
