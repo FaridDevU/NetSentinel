@@ -47,6 +47,9 @@ public class SandboxService {
 
     public SandboxResult runNmap(UUID executionId, String target, List<String> parameters) {
         List<String> args = new ArrayList<>(parameters);
+        if (!args.contains("-sT") && !args.contains("-sS")) {
+            args.add("-sT");
+        }
         args.add("-oX");
         args.add("-");
         return execute(executionId, "nmap", target, args, 600);
