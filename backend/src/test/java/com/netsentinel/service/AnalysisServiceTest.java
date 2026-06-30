@@ -8,9 +8,12 @@ import com.netsentinel.entity.NetworkHost;
 import com.netsentinel.entity.NetworkPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.MessageSource;
+import org.springframework.context.support.ResourceBundleMessageSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,28 +24,34 @@ class AnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AnalysisService(buildRiskCatalog());
+        service = new AnalysisService(buildRiskCatalog(), messages());
+    }
+
+    private MessageSource messages() {
+        ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
+        ms.setBasename("messages");
+        ms.setDefaultEncoding("UTF-8");
+        ms.setFallbackToSystemLocale(false);
+        return ms;
     }
 
     private RiskCatalogProperties buildRiskCatalog() {
         RiskCatalogProperties props = new RiskCatalogProperties();
         props.setDatabasePorts(Set.of(1433, 1521, 3306, 5432, 5984));
         props.setServices(List.of(
-                risk(21, "MEDIUM", "FTP transmite credenciales y datos en texto claro. Una captura pasiva de red es suficiente para robar las credenciales de acceso.", "protocolo en texto claro"),
-                risk(23, "HIGH", "Telnet es un protocolo sin cifrado ni proteccion de integridad. Todo el trafico de sesion, incluidas las contrasenas, se transmite en texto plano.", "acceso remoto sin cifrado"),
-                risk(445, "HIGH", "SMB es un vector frecuente de movimiento lateral y propagacion de ransomware. La exposicion a redes no confiables aumenta significativamente el riesgo.", "vector de movimiento lateral"),
-                risk(3389, "HIGH", "RDP es uno de los servicios mas atacados mediante fuerza bruta y explotacion de omisiones de autenticacion.", "objetivo de ataques de fuerza bruta"),
-                risk(2375, "CRITICAL", "API TCP del daemon de Docker expuesta sin TLS. Cualquier cliente puede crear contenedores, montar el sistema de archivos del host y comprometer el sistema por completo.", "API de contenedores sin autenticacion")
+                risk(21, "MEDIUM"),
+                risk(23, "HIGH"),
+                risk(445, "HIGH"),
+                risk(3389, "HIGH"),
+                risk(2375, "CRITICAL")
         ));
         return props;
     }
 
-    private RiskCatalogProperties.ServiceRisk risk(int port, String level, String reason, String label) {
+    private RiskCatalogProperties.ServiceRisk risk(int port, String level) {
         RiskCatalogProperties.ServiceRisk r = new RiskCatalogProperties.ServiceRisk();
         r.setPort(port);
         r.setLevel(level);
-        r.setReason(reason);
-        r.setShortLabel(label);
         return r;
     }
 
@@ -73,14 +82,14 @@ class AnalysisServiceTest {
         CveEntry cve = new CveEntry();
         cve.setCveId(cveId);
         cve.setCvssScore(cvssScore);
-        cve.setDescription("Descripcion de prueba para " + cveId);
+        cve.setDescription("Test description for " + cveId);
         cve.setPort(p);
         p.getCves().add(cve);
         return p;
     }
 
     @Test
-    void sinHosts_retornaRiesgoInfo() {
+    void emptyNetwork_returnsInfoRisk() {
         AnalysisReport report = service.analyze("192.168.1.0/24", List.of());
 
         assertThat(report.riskLevel()).isEqualTo("INFO");
@@ -90,7 +99,7 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void soloHostConPuertosCerrados_sinFindings() {
+    void closedPortsOnly_noFindings() {
         NetworkHost h = host("192.168.1.1", port(80, "closed", "http"));
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
@@ -100,7 +109,7 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void dockerTcpExpuesto_nivelRiesgoCritico() {
+    void dockerTcpExposed_criticalRisk() {
         NetworkHost h = host("192.168.1.10", port(2375, "open", "docker"));
 
         AnalysisReport report = service.analyze("192.168.1.0/24", List.of(h));
@@ -109,7 +118,7 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void ftpAbierto_findingMedioEnEspanol() {
+    void ftpOpen_mediumFinding() {
         NetworkHost h = host("192.168.1.1", port(21, "open", "ftp"));
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
@@ -118,13 +127,13 @@ class AnalysisServiceTest {
         Finding f = report.findings().get(0);
         assertThat(f.severity()).isEqualTo("MEDIUM");
         assertThat(f.title()).contains("21");
-        assertThat(f.detail()).contains("texto claro");
+        assertThat(f.detail()).contains("clear text");
         assertThat(f.host()).isEqualTo("192.168.1.1");
         assertThat(f.port()).isEqualTo(21);
     }
 
     @Test
-    void rdpAbierto_findingAlto() {
+    void rdpOpen_highFinding() {
         NetworkHost h = host("192.168.1.5", port(3389, "open", "rdp"));
 
         AnalysisReport report = service.analyze("192.168.1.5", List.of(h));
@@ -135,18 +144,18 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void telnetAbierto_findingAlto() {
+    void telnetOpen_highFinding() {
         NetworkHost h = host("10.0.0.1", port(23, "open", "telnet"));
 
         AnalysisReport report = service.analyze("10.0.0.1", List.of(h));
 
         Finding f = report.findings().get(0);
         assertThat(f.severity()).isEqualTo("HIGH");
-        assertThat(f.detail()).contains("texto plano");
+        assertThat(f.detail()).contains("plaintext");
     }
 
     @Test
-    void dockerTcpAbierto_findingCritico() {
+    void dockerTcpOpen_criticalFinding() {
         NetworkHost h = host("192.168.1.10", port(2375, "open", "docker"));
 
         AnalysisReport report = service.analyze("192.168.1.10", List.of(h));
@@ -158,7 +167,7 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void baseDatosExpuesta_findingMedioEnEspanol() {
+    void exposedDatabase_mediumFinding() {
         NetworkHost h = host("192.168.1.20", port(3306, "open", "mysql"));
 
         AnalysisReport report = service.analyze("192.168.1.20", List.of(h));
@@ -171,7 +180,7 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void cveAlto_generaFindingConSeveridadAlta() {
+    void highCve_generatesHighFinding() {
         NetworkPort p = portWithCve(443, "https", "CVE-2023-1234", 7.5);
         NetworkHost h = host("192.168.1.30", p);
 
@@ -180,12 +189,12 @@ class AnalysisServiceTest {
         assertThat(report.findings()).hasSize(1);
         Finding f = report.findings().get(0);
         assertThat(f.severity()).isEqualTo("HIGH");
-        assertThat(f.title()).containsIgnoringCase("alta");
+        assertThat(f.title()).containsIgnoringCase("high");
         assertThat(f.relatedCves()).contains("CVE-2023-1234");
     }
 
     @Test
-    void cveCritico_generaFindingCritico() {
+    void criticalCve_generatesCriticalFinding() {
         NetworkPort p = portWithCve(8080, "http", "CVE-2021-44228", 10.0);
         NetworkHost h = host("192.168.1.40", p);
 
@@ -193,11 +202,11 @@ class AnalysisServiceTest {
 
         Finding f = report.findings().get(0);
         assertThat(f.severity()).isEqualTo("CRITICAL");
-        assertThat(f.title()).containsIgnoringCase("critica");
+        assertThat(f.title()).containsIgnoringCase("critical");
     }
 
     @Test
-    void cveDebajo40_generaSoloExposicionBaja() {
+    void cveBelow40_onlyLowExposure() {
         NetworkPort p = portWithCve(80, "http", "CVE-2020-0001", 3.1);
         NetworkHost h = host("192.168.1.50", p);
 
@@ -209,20 +218,20 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void findingCveContieneDetalleEnEspanol() {
+    void cveFindingContainsDetail() {
         NetworkPort p = portWithCve(22, "ssh", "CVE-2023-9999", 9.8);
         NetworkHost h = host("10.0.0.5", p);
 
         AnalysisReport report = service.analyze("10.0.0.5", List.of(h));
 
         Finding f = report.findings().get(0);
-        assertThat(f.detail()).contains("El dispositivo");
-        assertThat(f.detail()).contains("vulnerabilidad");
+        assertThat(f.detail()).contains("Device");
+        assertThat(f.detail()).contains("vulnerability");
         assertThat(f.detail()).contains("CVSS");
     }
 
     @Test
-    void multiplesFindingsOrdenadosPorSeveridadDescendente() {
+    void multipleFindingsSortedByDescendingSeverity() {
         NetworkHost h = host("192.168.1.1",
                 port(21, "open", "ftp"),
                 port(2375, "open", "docker")
@@ -235,17 +244,17 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void ftpAbierto_recomendacionMencionaReemplazar() {
+    void ftpOpen_recommendationMentionsReplace() {
         NetworkHost h = host("192.168.1.1", port(21, "open", "ftp"));
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
 
         assertThat(report.recommendations())
-                .anyMatch(r -> r.contains("Reemplaza") && r.contains("FTP") && r.contains("21"));
+                .anyMatch(r -> r.contains("Replace") && r.contains("FTP") && r.contains("21"));
     }
 
     @Test
-    void rdpAbierto_recomendacionMencionaFirewall() {
+    void rdpOpen_recommendationMentionsFirewall() {
         NetworkHost h = host("192.168.1.1", port(3389, "open", "rdp"));
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
@@ -255,18 +264,18 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void cvePresente_recomendacionMencionaActualizar() {
+    void cvePresent_recommendationMentionsUpdate() {
         NetworkPort p = portWithCve(443, "ssl", "CVE-2023-0001", 7.0);
         NetworkHost h = host("192.168.1.1", p);
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
 
         assertThat(report.recommendations())
-                .anyMatch(r -> r.toLowerCase().contains("actualiza"));
+                .anyMatch(r -> r.toLowerCase().contains("update"));
     }
 
     @Test
-    void multipesFindingsGraves_recomendaSegmentacion() {
+    void multipleSevereFindings_recommendsSegmentation() {
         NetworkHost h = host("192.168.1.1",
                 port(21, "open", "ftp"),
                 port(23, "open", "telnet"),
@@ -276,25 +285,36 @@ class AnalysisServiceTest {
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
 
         assertThat(report.recommendations())
-                .anyMatch(r -> r.contains("segmentacion"));
+                .anyMatch(r -> r.contains("segmentation"));
     }
 
     @Test
-    void resumenContieneTextoEnEspanol() {
+    void summaryContainsText() {
         NetworkHost h = host("192.168.1.1", port(21, "open", "ftp"));
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
 
-        assertThat(report.summary()).contains("El analisis");
-        assertThat(report.summary()).contains("dispositivo");
+        assertThat(report.summary()).contains("analysis");
+        assertThat(report.summary()).contains("device");
     }
 
     @Test
-    void resumenSinVulnerabilidades_mensajePositivo() {
+    void summaryWithoutVulnerabilities_positiveMessage() {
         NetworkHost h = host("192.168.1.1", port(80, "open", "http"));
 
         AnalysisReport report = service.analyze("192.168.1.1", List.of(h));
 
-        assertThat(report.summary()).contains("No se detectaron");
+        assertThat(report.summary()).contains("No significant");
+    }
+
+    @Test
+    void spanishLocale_producesSpanishText() {
+        NetworkHost h = host("192.168.1.1", port(21, "open", "ftp"));
+
+        AnalysisReport report = service.analyze("192.168.1.1", List.of(h), new Locale("es"));
+
+        assertThat(report.findings().get(0).detail()).contains("texto claro");
+        assertThat(report.summary()).contains("El analisis");
+        assertThat(report.recommendations()).anyMatch(r -> r.contains("Reemplaza"));
     }
 }

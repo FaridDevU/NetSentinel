@@ -91,7 +91,7 @@ public class ScanController {
                     "Perfil de escaneo invalido. Aceptados: RAPIDO, ESTANDAR, COMPLETO");
         }
 
-        ScanJob job = scanService.createScan(target, parameters);
+        ScanJob job = scanService.createScan(target, parameters, request.language());
         scanService.executeScan(job.getId());
 
         return ResponseEntity.accepted().body(Map.of(

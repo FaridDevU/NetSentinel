@@ -57,6 +57,9 @@ public class ScanJob {
     @Column
     private Double riskScore;
 
+    @Column(nullable = false)
+    private String language = "en";
+
     @OneToMany(mappedBy = "scanJob", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NetworkHost> hosts = new ArrayList<>();
 

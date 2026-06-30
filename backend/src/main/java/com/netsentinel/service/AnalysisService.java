@@ -8,6 +8,7 @@ import com.netsentinel.entity.CveEntry;
 import com.netsentinel.entity.NetworkHost;
 import com.netsentinel.entity.NetworkPort;
 import com.netsentinel.entity.WebFinding;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -18,31 +19,37 @@ public class AnalysisService {
 
     private final Map<Integer, RiskCatalogProperties.ServiceRisk> knownRisks;
     private final Set<Integer> databasePorts;
+    private final MessageSource messages;
 
-    public AnalysisService(RiskCatalogProperties riskCatalog) {
+    public AnalysisService(RiskCatalogProperties riskCatalog, MessageSource messages) {
         this.knownRisks = riskCatalog.asMap();
         this.databasePorts = riskCatalog.getDatabasePorts();
+        this.messages = messages;
     }
 
     public AnalysisReport analyze(String target, List<NetworkHost> hosts) {
+        return analyze(target, hosts, Locale.ENGLISH);
+    }
+
+    public AnalysisReport analyze(String target, List<NetworkHost> hosts, Locale locale) {
         List<Finding> findings = new ArrayList<>();
         List<HostSummary> hostSummaries = new ArrayList<>();
 
         for (NetworkHost host : hosts) {
-            analyzeHost(host, findings, hostSummaries);
+            analyzeHost(host, findings, hostSummaries, locale);
         }
 
         findings.sort(Comparator.comparingInt(f -> -severityScore(f.severity())));
 
         double riskScore = calculateRiskScore(findings);
         String riskLevel = scoreToLevel(riskScore);
-        String summary = buildSummary(target, hosts, findings, riskLevel);
-        List<String> recommendations = buildRecommendations(findings, hosts);
+        String summary = buildSummary(target, hosts, findings, riskLevel, locale);
+        List<String> recommendations = buildRecommendations(findings, hosts, locale);
 
         return new AnalysisReport(riskLevel, riskScore, summary, findings, hostSummaries, recommendations);
     }
 
-    private void analyzeHost(NetworkHost host, List<Finding> findings, List<HostSummary> summaries) {
+    private void analyzeHost(NetworkHost host, List<Finding> findings, List<HostSummary> summaries, Locale locale) {
         List<NetworkPort> openPorts = host.getPorts().stream()
                 .filter(p -> "open".equals(p.getState()))
                 .toList();
@@ -62,7 +69,7 @@ public class AnalysisService {
                 for (Map.Entry<String, List<CveEntry>> entry : bySeverity.entrySet()) {
                     String sev = entry.getKey();
                     List<CveEntry> group = entry.getValue();
-                    findings.add(buildCveFinding(host.getIp(), port, sev, group));
+                    findings.add(buildCveFinding(host.getIp(), port, sev, group, locale));
                 }
                 totalCves += significantCves.size();
 
@@ -70,8 +77,8 @@ public class AnalysisService {
                 RiskCatalogProperties.ServiceRisk risk = knownRisks.get(port.getPortNumber());
                 findings.add(new Finding(
                         risk.getLevel(),
-                        buildServiceTitle(port, risk),
-                        risk.getReason(),
+                        buildServiceTitle(port, locale),
+                        msg("risk." + port.getPortNumber() + ".reason", locale),
                         host.getIp(),
                         port.getPortNumber(),
                         port.getService() != null ? port.getService() : "unknown",
@@ -81,8 +88,8 @@ public class AnalysisService {
             } else if (databasePorts.contains(port.getPortNumber())) {
                 findings.add(new Finding(
                         "MEDIUM",
-                        "Base de datos accesible directamente en el puerto " + port.getPortNumber(),
-                        buildDbExposureDetail(host.getIp(), port),
+                        msg("finding.db.title", locale, String.valueOf(port.getPortNumber())),
+                        buildDbExposureDetail(host.getIp(), port, locale),
                         host.getIp(),
                         port.getPortNumber(),
                         port.getService() != null ? port.getService() : "database",
@@ -91,8 +98,8 @@ public class AnalysisService {
             }
         }
 
-        analyzeWebFindings(host, findings);
-        addLowExposureFinding(host, openPorts, findings);
+        analyzeWebFindings(host, findings, locale);
+        addLowExposureFinding(host, openPorts, findings, locale);
 
         String hostRisk = calculateHostRisk(openPorts, findings, host.getIp());
         summaries.add(new HostSummary(
@@ -100,11 +107,11 @@ public class AnalysisService {
                 hostRisk,
                 openPorts.size(),
                 totalCves,
-                buildHostSummary(host, openPorts, totalCves)
+                buildHostSummary(host, openPorts, totalCves, locale)
         ));
     }
 
-    private void analyzeWebFindings(NetworkHost host, List<Finding> findings) {
+    private void analyzeWebFindings(NetworkHost host, List<Finding> findings, Locale locale) {
         List<WebFinding> highFindings = host.getWebFindings().stream()
                 .filter(wf -> "HIGH".equals(wf.getSeverity()))
                 .toList();
@@ -119,23 +126,21 @@ public class AnalysisService {
                     .collect(Collectors.joining(", "));
             findings.add(new Finding(
                     "HIGH",
-                    "Contenido web critico expuesto en " + host.getIp(),
-                    "Se encontraron " + highFindings.size() + " ruta(s) web de alto riesgo accesibles: " + paths +
-                    ". Estas rutas pueden exponer paneles de administracion, archivos de configuracion o funciones criticas del sistema.",
+                    msg("finding.web.high.title", locale, host.getIp()),
+                    msg("finding.web.high.detail", locale, highFindings.size(), paths),
                     host.getIp(), 80, "http", List.of()
             ));
         } else if (!mediumFindings.isEmpty()) {
             findings.add(new Finding(
                     "MEDIUM",
-                    "Contenido web sensible detectado en " + host.getIp(),
-                    "Se encontraron " + mediumFindings.size() + " ruta(s) web con contenido potencialmente sensible " +
-                    "detectadas por gobuster y nikto. Revisa cada hallazgo y restringe el acceso publico.",
+                    msg("finding.web.medium.title", locale, host.getIp()),
+                    msg("finding.web.medium.detail", locale, mediumFindings.size()),
                     host.getIp(), 80, "http", List.of()
             ));
         }
     }
 
-    private void addLowExposureFinding(NetworkHost host, List<NetworkPort> openPorts, List<Finding> findings) {
+    private void addLowExposureFinding(NetworkHost host, List<NetworkPort> openPorts, List<Finding> findings, Locale locale) {
         if (openPorts.isEmpty()) return;
         boolean hostAlreadyHasFinding = findings.stream().anyMatch(f -> f.host().equals(host.getIp()));
         if (hostAlreadyHasFinding) return;
@@ -148,9 +153,8 @@ public class AnalysisService {
         NetworkPort first = openPorts.get(0);
         findings.add(new Finding(
                 "LOW",
-                "Puertos abiertos detectados en " + host.getIp(),
-                "El dispositivo expone servicios en la red: " + ports +
-                        ". No se confirmaron vulnerabilidades conocidas en esta revision, pero los servicios abiertos deben mantenerse actualizados y restringidos a equipos confiables.",
+                msg("finding.lowexposure.title", locale, host.getIp()),
+                msg("finding.lowexposure.detail", locale, ports),
                 host.getIp(),
                 first.getPortNumber(),
                 first.getService() != null ? first.getService() : "unknown",
@@ -158,72 +162,53 @@ public class AnalysisService {
         ));
     }
 
-    private Finding buildCveFinding(String ip, NetworkPort port, String severity, List<CveEntry> cves) {
+    private Finding buildCveFinding(String ip, NetworkPort port, String severity, List<CveEntry> cves, Locale locale) {
         String service = port.getService() != null ? port.getService() : "service";
         String version = port.getVersion() != null ? " " + port.getVersion() : "";
         int count = cves.size();
         CveEntry top = cves.get(0);
 
-        String severityEs = switch (severity) {
-            case "CRITICAL" -> "critica";
-            case "HIGH"     -> "alta";
-            case "MEDIUM"   -> "media";
-            default         -> "baja";
-        };
-        String title = String.format("%s%s — %d vulnerabilidad%s de severidad %s (puerto %d)",
-                capitalize(service), version, count, count > 1 ? "es" : "", severityEs, port.getPortNumber());
+        String severityWord = msg("severity." + severity.toLowerCase(), locale);
+        String title = msg("finding.cve.title", locale,
+                capitalize(service), version, count, severityWord, String.valueOf(port.getPortNumber()));
 
-        String desc = top.getDescription() != null ? top.getDescription() : "Sin descripcion disponible.";
+        String desc = top.getDescription() != null ? top.getDescription() : msg("cve.nodescription", locale);
         String excerpt = desc.length() > 200 ? desc.substring(0, 200) + "..." : desc;
 
-        String detail = String.format(
-                "El dispositivo %s expone %s%s en el puerto %d/%s. Se identificaron %d vulnerabilidad%s de severidad %s: %s. " +
-                "La mas grave (%s, CVSS %.1f): %s",
-                ip, service, version, port.getPortNumber(), port.getProtocol(),
-                count, count > 1 ? "es" : "", severityEs,
+        String detail = msg("finding.cve.detail", locale,
+                ip, service, version, String.valueOf(port.getPortNumber()), port.getProtocol(),
+                count, severityWord,
                 cves.stream().map(CveEntry::getCveId).collect(Collectors.joining(", ")),
-                top.getCveId(), top.getCvssScore(), excerpt
-        );
+                top.getCveId(), top.getCvssScore(), excerpt);
 
         List<String> cveIds = cves.stream().map(CveEntry::getCveId).toList();
         return new Finding(severity, title, detail, ip, port.getPortNumber(),
                 port.getService() != null ? port.getService() : "unknown", cveIds);
     }
 
-    private String buildServiceTitle(NetworkPort port, RiskCatalogProperties.ServiceRisk risk) {
-        String name = port.getService() != null ? capitalize(port.getService()) : "Servicio";
-        String suffix = risk.getShortLabel() != null && !risk.getShortLabel().isBlank()
-                ? risk.getShortLabel()
-                : "riesgo conocido";
-        return name + " expuesto en el puerto " + port.getPortNumber() + " — " + suffix;
+    private String buildServiceTitle(NetworkPort port, Locale locale) {
+        String name = port.getService() != null ? capitalize(port.getService()) : msg("service.default", locale);
+        String label = msg("risk." + port.getPortNumber() + ".label", locale);
+        return msg("finding.service.title", locale, name, String.valueOf(port.getPortNumber()), label);
     }
 
-    private String buildDbExposureDetail(String ip, NetworkPort port) {
-        String service = port.getService() != null ? port.getService() : "base de datos";
-        return String.format(
-                "El puerto %d en %s expone una instancia de %s directamente en la red. " +
-                "Los servicios de base de datos no deben ser accesibles desde redes no confiables. " +
-                "Se recomienda usar reglas de firewall para restringir el acceso solo a los sistemas autorizados.",
-                port.getPortNumber(), ip, service);
+    private String buildDbExposureDetail(String ip, NetworkPort port, Locale locale) {
+        String service = port.getService() != null ? port.getService() : msg("service.database.default", locale);
+        return msg("finding.db.detail", locale, String.valueOf(port.getPortNumber()), ip, service);
     }
 
-    private String buildHostSummary(NetworkHost host, List<NetworkPort> openPorts, int totalCves) {
-        if (openPorts.isEmpty()) return "No se detectaron puertos abiertos en este dispositivo.";
+    private String buildHostSummary(NetworkHost host, List<NetworkPort> openPorts, int totalCves, Locale locale) {
+        if (openPorts.isEmpty()) return msg("host.summary.noports", locale);
 
         String services = openPorts.stream()
                 .map(p -> p.getService() != null ? p.getService() : String.valueOf(p.getPortNumber()))
                 .distinct().limit(4)
                 .collect(Collectors.joining(", "));
 
-        String cveInfo = totalCves > 0
-                ? String.format(" Se detectaron %d vulnerabilidad%s conocida%s.", totalCves, totalCves > 1 ? "es" : "", totalCves > 1 ? "s" : "")
-                : "";
+        String cveInfo = totalCves > 0 ? msg("host.summary.cveinfo", locale, totalCves) : "";
+        String osInfo = host.getOs() != null ? msg("host.summary.os", locale, host.getOs()) : "";
 
-        String osInfo = host.getOs() != null ? " Sistema operativo: " + host.getOs() + "." : "";
-
-        return String.format("%d puerto%s abierto%s: %s.%s%s",
-                openPorts.size(), openPorts.size() > 1 ? "s" : "", openPorts.size() > 1 ? "s" : "",
-                services, osInfo, cveInfo);
+        return msg("host.summary.main", locale, openPorts.size(), services, osInfo, cveInfo);
     }
 
     private String calculateHostRisk(List<NetworkPort> openPorts, List<Finding> findings, String ip) {
@@ -249,7 +234,7 @@ public class AnalysisService {
         return Math.round(score * 10.0) / 10.0;
     }
 
-    private String buildSummary(String target, List<NetworkHost> hosts, List<Finding> findings, String riskLevel) {
+    private String buildSummary(String target, List<NetworkHost> hosts, List<Finding> findings, String riskLevel, Locale locale) {
         int totalOpen = hosts.stream()
                 .mapToInt(h -> (int) h.getPorts().stream().filter(p -> "open".equals(p.getState())).count())
                 .sum();
@@ -257,78 +242,69 @@ public class AnalysisService {
         long high = findings.stream().filter(f -> "HIGH".equals(f.severity())).count();
         long medium = findings.stream().filter(f -> "MEDIUM".equals(f.severity())).count();
 
-        String hostWord = hosts.size() == 1 ? "dispositivo" : "dispositivos";
-        String portWord = totalOpen == 1 ? "puerto abierto" : "puertos abiertos";
-
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("El analisis de %s descubrio %d %s con %d %s. ",
-                target, hosts.size(), hostWord, totalOpen, portWord));
+        sb.append(msg("summary.intro", locale, target, hosts.size(), totalOpen));
+        sb.append(' ');
 
         if (critical > 0 || high > 0) {
-            sb.append(String.format("Se encontraron %s: %s",
-                    findings.size() == 1 ? "1 problema de seguridad" : findings.size() + " problemas de seguridad",
-                    buildSeveritySummary(critical, high, medium)));
+            sb.append(msg("summary.problems", locale, findings.size(), buildSeveritySummary(critical, high, medium, locale)));
         } else if (medium > 0) {
-            sb.append(String.format("Se identificaron %d problema%s de severidad media que requieren atencion.",
-                    medium, medium > 1 ? "s" : ""));
+            sb.append(msg("summary.mediumonly", locale, medium));
         } else {
-            sb.append("No se detectaron vulnerabilidades significativas.");
+            sb.append(msg("summary.none", locale));
         }
 
-        sb.append(" ").append(riskSentence(riskLevel));
+        sb.append(' ').append(riskSentence(riskLevel, locale));
         return sb.toString();
     }
 
-    private String buildSeveritySummary(long critical, long high, long medium) {
+    private String buildSeveritySummary(long critical, long high, long medium, Locale locale) {
         List<String> parts = new ArrayList<>();
-        if (critical > 0) parts.add(critical + " critico" + (critical > 1 ? "s" : ""));
-        if (high > 0) parts.add(high + " alto" + (high > 1 ? "s" : ""));
-        if (medium > 0) parts.add(medium + " medio" + (medium > 1 ? "s" : ""));
+        if (critical > 0) parts.add(msg("sevcount.critical", locale, critical));
+        if (high > 0) parts.add(msg("sevcount.high", locale, high));
+        if (medium > 0) parts.add(msg("sevcount.medium", locale, medium));
         return String.join(", ", parts) + ".";
     }
 
-    private String riskSentence(String level) {
-        return switch (level) {
-            case "CRITICAL" -> "Se requiere accion inmediata — el riesgo de explotacion activa es alto.";
-            case "HIGH"     -> "Se recomienda tomar medidas urgentes para reducir la exposicion.";
-            case "MEDIUM"   -> "Se aconseja aplicar los parches pendientes y restringir el acceso a los servicios expuestos.";
-            case "LOW"      -> "La exposicion es limitada. Mantener monitoreo regular y ciclos de actualizacion.";
-            default         -> "No se requiere ninguna accion inmediata.";
+    private String riskSentence(String level, Locale locale) {
+        String key = switch (level) {
+            case "CRITICAL" -> "risk.sentence.critical";
+            case "HIGH"     -> "risk.sentence.high";
+            case "MEDIUM"   -> "risk.sentence.medium";
+            case "LOW"      -> "risk.sentence.low";
+            default         -> "risk.sentence.info";
         };
+        return msg(key, locale);
     }
 
-    private List<String> buildRecommendations(List<Finding> findings, List<NetworkHost> hosts) {
+    private List<String> buildRecommendations(List<Finding> findings, List<NetworkHost> hosts, Locale locale) {
         Set<String> seen = new LinkedHashSet<>();
 
         for (Finding f : findings) {
-            String svc = f.service().toLowerCase();
             int port = f.port();
 
             if (!f.relatedCves().isEmpty()) {
-                String rec = "Actualiza " + capitalize(f.service()) + " a la ultima version estable para corregir " +
-                        f.relatedCves().size() + " vulnerabilidad" + (f.relatedCves().size() > 1 ? "es" : "") +
-                        " conocida" + (f.relatedCves().size() > 1 ? "s" : "") + " en el puerto " + port + ".";
-                seen.add(rec);
+                seen.add(msg("rec.cve", locale, capitalize(f.service()), f.relatedCves().size(), String.valueOf(port)));
             }
 
-            if (port == 23) seen.add("Reemplaza Telnet (puerto 23) por SSH para todos los accesos remotos.");
-            if (port == 21) seen.add("Reemplaza FTP (puerto 21) por SFTP o FTPS para proteger las credenciales en transito.");
-            if (port == 3389) seen.add("Restringe el acceso a RDP (puerto 3389) mediante reglas de firewall y habilita la Autenticacion de Nivel de Red (NLA).");
-            if (port == 445) seen.add("Bloquea SMB (puerto 445) en el perimetro. Habilita la firma SMB para prevenir ataques de retransmision.");
-            if (port == 6379) seen.add("Habilita autenticacion en Redis (requirepass) y vincula Redis a localhost o a una interfaz privada.");
-            if (port == 27017) seen.add("Habilita autenticacion en MongoDB y restringe el acceso al puerto de la base de datos por IP.");
-            if (port == 2375) seen.add("Desactiva inmediatamente la API TCP de Docker o aplica autenticacion TLS de cliente.");
+            if (port == 23) seen.add(msg("rec.telnet", locale));
+            if (port == 21) seen.add(msg("rec.ftp", locale));
+            if (port == 3389) seen.add(msg("rec.rdp", locale));
+            if (port == 445) seen.add(msg("rec.smb", locale));
+            if (port == 6379) seen.add(msg("rec.redis", locale));
+            if (port == 27017) seen.add(msg("rec.mongodb", locale));
+            if (port == 2375) seen.add(msg("rec.docker", locale));
             if (databasePorts.contains(port) && f.relatedCves().isEmpty()) {
-                seen.add("Restringe el puerto de base de datos " + port + " (" + capitalize(f.service()) + ") solo a los servidores de aplicaciones autorizados mediante reglas de firewall.");
+                seen.add(msg("rec.database", locale, String.valueOf(port), capitalize(f.service())));
             }
         }
 
         long hasVulnerabilities = findings.stream().filter(f -> !f.relatedCves().isEmpty()).count();
         if (hasVulnerabilities > 0) {
-            seen.add("Establece un calendario regular de actualizaciones — prioriza los servicios con vulnerabilidades conocidas.");
+            seen.add(msg("rec.updateschedule", locale));
         }
         if (findings.size() > 2) {
-            seen.add("Aplica segmentacion de red para limitar el movimiento lateral entre los servicios expuestos.");
+            seen.add(msg("rec.segmentation", locale));
         }
 
         long highWebCount = hosts.stream()
@@ -336,7 +312,7 @@ public class AnalysisService {
                 .filter(wf -> "HIGH".equals(wf.getSeverity()))
                 .count();
         if (highWebCount > 0) {
-            seen.add("Revisa y protege las rutas web de alto riesgo detectadas — restringe el acceso con autenticacion o reglas de firewall.");
+            seen.add(msg("rec.webhigh", locale));
         }
 
         return new ArrayList<>(seen);
@@ -366,6 +342,10 @@ public class AnalysisService {
         if (score >= 7.0) return "HIGH";
         if (score >= 4.0) return "MEDIUM";
         return "LOW";
+    }
+
+    private String msg(String code, Locale locale, Object... args) {
+        return messages.getMessage(code, args, locale);
     }
 
     private String capitalize(String s) {

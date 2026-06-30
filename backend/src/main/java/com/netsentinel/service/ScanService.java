@@ -99,7 +99,12 @@ public class ScanService {
 
     @Transactional
     public ScanJob createScan(String target, List<String> parameters) {
+        return createScan(target, parameters, "en");
+    }
+
+    public ScanJob createScan(String target, List<String> parameters, String language) {
         ScanJob job = new ScanJob(target, parameters);
+        job.setLanguage(language != null && !language.isBlank() ? language : "en");
         return scanJobRepository.save(job);
     }
 
@@ -204,7 +209,8 @@ public class ScanService {
 
         addLog(scanJobId, "Calculando nivel de riesgo...");
         try {
-            AnalysisReport report = analysisService.analyze(job.getTarget(), hosts);
+            AnalysisReport report = analysisService.analyze(job.getTarget(), hosts,
+                    java.util.Locale.forLanguageTag(job.getLanguage()));
             String reportJson = objectMapper.writeValueAsString(report);
             scanJobUpdater.saveAnalysis(scanJobId, reportJson, report.riskLevel(), report.riskScore());
             log.info("Analysis saved for scan {} — risk: {}", scanJobId, report.riskLevel());
