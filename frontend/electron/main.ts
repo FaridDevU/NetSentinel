@@ -108,9 +108,8 @@ async function waitForBackend(timeoutMs = 30000): Promise<boolean> {
   return false;
 }
 
-async function runQuickCheck(): Promise<{ wsl: boolean; kali: boolean }> {
-  const ready = nativeResourcesReady();
-  return { wsl: ready, kali: ready };
+async function runQuickCheck(): Promise<{ ready: boolean }> {
+  return { ready: nativeResourcesReady() };
 }
 
 async function runDepsCheck(): Promise<DepResult[]> {

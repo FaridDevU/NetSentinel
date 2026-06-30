@@ -70,7 +70,7 @@ export class App implements OnInit {
       .then((r: any) => {
         this.checking.set(false);
         const welcomed = localStorage.getItem('ns_welcomed') === '1';
-        if (!r?.wsl || !r?.kali || !welcomed) {
+        if (!r?.ready || !welcomed) {
           this.showSetup.set(true);
         } else {
           this.expandWindow();
