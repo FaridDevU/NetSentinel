@@ -1,6 +1,6 @@
 {
   "name": "netsentinel-frontend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "NetSentinel - interfaz de escritorio Angular + Electron",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "afterPack": "build-resources/after-pack.js",
     "extraResources": [
       {
-        "from": "../backend/target/backend-0.1.0.jar",
+        "from": "../backend/target/backend-0.2.0.jar",
         "to": "backend.jar"
       },
       {

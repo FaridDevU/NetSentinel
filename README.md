@@ -12,7 +12,7 @@
 [![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square)](#stack)
 [![Angular](https://img.shields.io/badge/Angular-21-red?style=flat-square)](#stack)
 
-[**Download installer**](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0) · [**Architecture**](#architecture) · [**Report a bug**](../../issues)
+[**Download installer**](https://github.com/FaridDevU/NetSentinel/releases) · [**Architecture**](#architecture) · [**Report a bug**](../../issues)
 
 </div>
 
@@ -22,7 +22,7 @@
 
 There are no commands for the end user. The full flow is:
 
-1. Download `NetSentinel.Setup.0.1.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0).
+1. Download `NetSentinel.Setup.0.2.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases).
 2. Install with a double click and open the app.
 3. Press **Complete installation**. Everything ships inside the installer — a bundled Java runtime, the local database (SQLite), the scan engine and the native tools — so there is nothing else to set up.
 4. Press **Analyze my network** and read the diagnosis.
@@ -152,7 +152,7 @@ sequenceDiagram
 
 ### End user
 
-Download and install `NetSentinel.Setup.0.1.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases/tag/v0.1.0). The installer is self-contained; there are no external dependencies to set up.
+Download and install `NetSentinel.Setup.0.2.0.exe` from the [release](https://github.com/FaridDevU/NetSentinel/releases). The installer is self-contained; there are no external dependencies to set up.
 
 <details>
 <summary><b>Build from source</b></summary>

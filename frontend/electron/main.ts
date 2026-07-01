@@ -30,7 +30,7 @@ interface LocalNetwork {
 function backendJarPath(): string {
   return app.isPackaged
     ? join(process.resourcesPath, 'backend.jar')
-    : join(__dirname, '..', '..', 'backend', 'target', 'backend-0.1.0.jar');
+    : join(__dirname, '..', '..', 'backend', 'target', 'backend-0.2.0.jar');
 }
 
 function javaPath(): string {
