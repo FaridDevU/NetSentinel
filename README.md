@@ -32,7 +32,7 @@ The backend exposes a local REST API at `http://localhost:8080`. A scan is start
 ```bash
 curl -X POST http://localhost:8080/api/scan/start \
   -H "Content-Type: application/json" \
-  -d '{"target": "192.168.1.0/24", "parameters": ["STANDARD"]}'
+  -d '{"target": "192.168.1.0/24", "parameters": ["-sV", "-T4"]}'
 ```
 
 ```json
@@ -159,20 +159,14 @@ Download and install `NetSentinel.Setup.0.1.0.exe` from the [release](https://gi
 
 ```bash
 git clone https://github.com/FaridDevU/NetSentinel.git
-cd NetSentinel
-
-cd backend
-mvn clean package
-
-cd ../sandbox
-cargo build --release
-
-cd ../frontend
+cd NetSentinel/frontend
 npm install
-npm run electron:build
+
+# place nmap.exe and gobuster.exe in frontend/build/tools/ first
+npm run electron:dist
 ```
 
-The generated installer ends up in `frontend/dist-installer/`.
+`electron:dist` rebuilds the backend jar (SQLite), the native `sandbox.exe`, a trimmed JRE via jlink, and the NSIS installer — which ends up in `frontend/dist-installer/`.
 </details>
 
 ---
@@ -186,7 +180,7 @@ Against the local API, a full scan cycle:
 ```bash
 curl -X POST http://localhost:8080/api/scan/start \
   -H "Content-Type: application/json" \
-  -d '{"target": "127.0.0.1", "parameters": ["QUICK"]}'
+  -d '{"target": "127.0.0.1", "parameters": ["-sV", "-T4", "--top-ports", "100"]}'
 
 curl http://localhost:8080/api/scan/{id}/status
 
@@ -230,7 +224,7 @@ cd sandbox && cargo test
 cd frontend && npm test -- --no-watch
 ```
 
-Current coverage: backend with unit and integration tests (`ScanServiceIntegrationTest` with Testcontainers), sandbox with command and target validation tests, and a frontend suite. CI runs them on every push.
+Current coverage: backend with unit and integration tests (`ScanServiceIntegrationTest` runs against a temporary SQLite file — no Docker needed), sandbox with command and target validation tests, and a frontend suite. CI runs them on every push.
 
 ---
 
